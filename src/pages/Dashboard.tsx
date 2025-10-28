@@ -30,7 +30,7 @@ const Dashboard = () => {
       const [trucksRes, loadsRes, transactionsRes] = await Promise.all([
         supabase.from("trucks").select("*", { count: "exact" }).eq("user_id", user.id),
         supabase.from("loads").select("*", { count: "exact" }).eq("user_id", user.id),
-        supabase.from("transactions").select("amount").eq("user_id", user.id),
+        supabase.from("transactions").select("amount, transaction_type").eq("user_id", user.id),
       ]);
 
       const activeTrucks = trucksRes.data?.filter((t) => t.is_active).length || 0;
@@ -40,10 +40,10 @@ const Dashboard = () => {
 
       const totalRevenue = transactionsRes.data
         ?.filter((t) => t.transaction_type?.includes("from_provider"))
-        .reduce((sum, t) => sum + parseFloat(t.amount || "0"), 0) || 0;
+        .reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0;
 
       const totalProfit = loadsRes.data?.reduce((sum, l) => 
-        sum + parseFloat(l.profit || "0"), 0
+        sum + Number(l.profit || 0), 0
       ) || 0;
 
       setStats({
