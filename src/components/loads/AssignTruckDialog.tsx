@@ -57,12 +57,14 @@ export const AssignTruckDialog = ({ load, open, onOpenChange, onSuccess }: Assig
 
   const calculateProfit = () => {
     if (!truckFreight) return 0;
-    return load.provider_freight - parseFloat(truckFreight);
+    const baseProfit = load.provider_freight - parseFloat(truckFreight);
+    const commission = (parseFloat(truckFreight) * parseFloat(commissionPercentage)) / 100;
+    return baseProfit + commission;
   };
 
   const calculateCommission = () => {
-    const profit = calculateProfit();
-    return (profit * parseFloat(commissionPercentage)) / 100;
+    if (!truckFreight) return 0;
+    return (parseFloat(truckFreight) * parseFloat(commissionPercentage)) / 100;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,14 +185,18 @@ export const AssignTruckDialog = ({ load, open, onOpenChange, onSuccess }: Assig
                 <span className="text-muted-foreground">Truck Freight:</span>
                 <span className="font-medium">₹{parseFloat(truckFreight).toLocaleString()}</span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Commission ({commissionPercentage}% of truck freight):</span>
+                <span className="font-medium text-success">+₹{calculateCommission().toLocaleString()}</span>
+              </div>
               <div className="h-px bg-border my-2" />
               <div className="flex justify-between font-semibold">
-                <span>Profit:</span>
-                <span className="text-primary">₹{calculateProfit().toLocaleString()}</span>
+                <span>Base Profit:</span>
+                <span className="text-muted-foreground">₹{(load.provider_freight - parseFloat(truckFreight || "0")).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Commission ({commissionPercentage}%):</span>
-                <span className="font-medium">₹{calculateCommission().toLocaleString()}</span>
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total Profit:</span>
+                <span className="text-primary">₹{calculateProfit().toLocaleString()}</span>
               </div>
             </div>
           )}

@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, MapPin, Package, TrendingUp, Truck } from "lucide-react";
+import { Edit, MapPin, Package, TrendingUp, Truck, Receipt } from "lucide-react";
 import { Load } from "@/pages/Loads";
 import { LoadProvider } from "@/pages/LoadProviders";
 import { AssignTruckDialog } from "./AssignTruckDialog";
+import { TransactionWorkflowDialog } from "./TransactionWorkflowDialog";
 
 interface LoadsListProps {
   loads: Load[];
@@ -19,6 +20,7 @@ interface LoadsListProps {
 export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps) => {
   const [providers, setProviders] = useState<Record<string, LoadProvider>>({});
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState<Load | null>(null);
 
   useEffect(() => {
@@ -71,6 +73,11 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
     onRefresh();
     setAssignDialogOpen(false);
     setSelectedLoad(null);
+  };
+
+  const handleOpenWorkflow = (load: Load) => {
+    setSelectedLoad(load);
+    setWorkflowDialogOpen(true);
   };
 
   if (loading) {
@@ -169,6 +176,12 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
                     Assign Truck
                   </Button>
                 )}
+                {load.status !== "pending" && load.status !== "completed" && (
+                  <Button size="sm" variant="default" onClick={() => handleOpenWorkflow(load)}>
+                    <Receipt className="h-4 w-4 mr-1" />
+                    Manage Transactions
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -176,12 +189,20 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
       </div>
 
       {selectedLoad && (
-        <AssignTruckDialog
-          load={selectedLoad}
-          open={assignDialogOpen}
-          onOpenChange={setAssignDialogOpen}
-          onSuccess={handleAssignSuccess}
-        />
+        <>
+          <AssignTruckDialog
+            load={selectedLoad}
+            open={assignDialogOpen}
+            onOpenChange={setAssignDialogOpen}
+            onSuccess={handleAssignSuccess}
+          />
+          <TransactionWorkflowDialog
+            load={selectedLoad}
+            open={workflowDialogOpen}
+            onOpenChange={setWorkflowDialogOpen}
+            onRefresh={onRefresh}
+          />
+        </>
       )}
     </div>
   );
