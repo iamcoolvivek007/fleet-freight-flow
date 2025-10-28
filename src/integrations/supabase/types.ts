@@ -14,7 +14,271 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      load_assignments: {
+        Row: {
+          assigned_at: string | null
+          commission_amount: number | null
+          commission_percentage: number | null
+          created_at: string | null
+          id: string
+          load_id: string
+          truck_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          load_id: string
+          truck_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          id?: string
+          load_id?: string
+          truck_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "load_assignments_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "load_assignments_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      load_providers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          phone: string
+          provider_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone: string
+          provider_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone?: string
+          provider_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loads: {
+        Row: {
+          created_at: string | null
+          id: string
+          load_provider_id: string
+          loading_location: string
+          material_description: string
+          material_weight: number
+          profit: number | null
+          provider_freight: number
+          status: Database["public"]["Enums"]["load_status"] | null
+          truck_freight: number | null
+          unloading_location: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          load_provider_id: string
+          loading_location: string
+          material_description: string
+          material_weight: number
+          profit?: number | null
+          provider_freight: number
+          status?: Database["public"]["Enums"]["load_status"] | null
+          truck_freight?: number | null
+          unloading_location: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          load_provider_id?: string
+          loading_location?: string
+          material_description?: string
+          material_weight?: number
+          profit?: number | null
+          provider_freight?: number
+          status?: Database["public"]["Enums"]["load_status"] | null
+          truck_freight?: number | null
+          unloading_location?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loads_load_provider_id_fkey"
+            columns: ["load_provider_id"]
+            isOneToOne: false
+            referencedRelation: "load_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          load_assignment_id: string | null
+          notes: string | null
+          payment_details: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          transaction_date: string | null
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          load_assignment_id?: string | null
+          notes?: string | null
+          payment_details?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          transaction_date?: string | null
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          load_assignment_id?: string | null
+          notes?: string | null
+          payment_details?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          transaction_date?: string | null
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_load_assignment_id_fkey"
+            columns: ["load_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "load_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trucks: {
+        Row: {
+          carrying_capacity: number
+          created_at: string | null
+          driver_name: string
+          driver_phone: string
+          id: string
+          is_active: boolean | null
+          owner_name: string
+          owner_phone: string
+          truck_length: number
+          truck_number: string
+          truck_type: Database["public"]["Enums"]["truck_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          carrying_capacity: number
+          created_at?: string | null
+          driver_name: string
+          driver_phone: string
+          id?: string
+          is_active?: boolean | null
+          owner_name: string
+          owner_phone: string
+          truck_length: number
+          truck_number: string
+          truck_type: Database["public"]["Enums"]["truck_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          carrying_capacity?: number
+          created_at?: string | null
+          driver_name?: string
+          driver_phone?: string
+          id?: string
+          is_active?: boolean | null
+          owner_name?: string
+          owner_phone?: string
+          truck_length?: number
+          truck_number?: string
+          truck_type?: Database["public"]["Enums"]["truck_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +287,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      load_status:
+        | "pending"
+        | "assigned"
+        | "in_transit"
+        | "delivered"
+        | "completed"
+      payment_method: "cash" | "upi" | "bank_transfer"
+      transaction_type:
+        | "advance_to_driver"
+        | "balance_to_driver"
+        | "advance_from_provider"
+        | "balance_from_provider"
+        | "commission"
+      truck_type: "open" | "container"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +427,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      load_status: [
+        "pending",
+        "assigned",
+        "in_transit",
+        "delivered",
+        "completed",
+      ],
+      payment_method: ["cash", "upi", "bank_transfer"],
+      transaction_type: [
+        "advance_to_driver",
+        "balance_to_driver",
+        "advance_from_provider",
+        "balance_from_provider",
+        "commission",
+      ],
+      truck_type: ["open", "container"],
+    },
   },
 } as const
