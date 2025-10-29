@@ -17,6 +17,8 @@ export interface Truck {
   truck_type: "open" | "container";
   truck_length: number;
   carrying_capacity: number;
+  truck_image_url: string | null;
+  driver_image_url: string | null;
   is_active: boolean;
 }
 

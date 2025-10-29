@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Truck } from "@/pages/Trucks";
+import { Upload, X } from "lucide-react";
 
 interface TruckFormProps {
   truck?: Truck | null;
@@ -15,6 +16,10 @@ interface TruckFormProps {
 
 export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
   const [loading, setLoading] = useState(false);
+  const [truckImage, setTruckImage] = useState<File | null>(null);
+  const [driverImage, setDriverImage] = useState<File | null>(null);
+  const [truckImagePreview, setTruckImagePreview] = useState<string>("");
+  const [driverImagePreview, setDriverImagePreview] = useState<string>("");
   const [formData, setFormData] = useState({
     truck_number: "",
     driver_name: "",
@@ -42,8 +47,43 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
         carrying_capacity: truck.carrying_capacity?.toString() || "",
         is_active: truck.is_active,
       });
+      if (truck.truck_image_url) setTruckImagePreview(truck.truck_image_url);
+      if (truck.driver_image_url) setDriverImagePreview(truck.driver_image_url);
     }
   }, [truck]);
+
+  const handleImageChange = (file: File | null, type: 'truck' | 'driver') => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (type === 'truck') {
+          setTruckImage(file);
+          setTruckImagePreview(reader.result as string);
+        } else {
+          setDriverImage(file);
+          setDriverImagePreview(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${Math.random()}.${fileExt}`;
+    
+    const { error: uploadError, data } = await supabase.storage
+      .from('truck-images')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('truck-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,10 +93,27 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      let truckImageUrl = truckImagePreview;
+      let driverImageUrl = driverImagePreview;
+
+      // Upload truck image if new file selected
+      if (truckImage) {
+        const url = await uploadImage(truckImage, 'trucks');
+        if (url) truckImageUrl = url;
+      }
+
+      // Upload driver image if new file selected
+      if (driverImage) {
+        const url = await uploadImage(driverImage, 'drivers');
+        if (url) driverImageUrl = url;
+      }
+
       const payload = {
         ...formData,
         truck_length: parseFloat(formData.truck_length) || null,
         carrying_capacity: parseFloat(formData.carrying_capacity) || null,
+        truck_image_url: truckImageUrl || null,
+        driver_image_url: driverImageUrl || null,
         user_id: user.id,
       };
 
@@ -187,6 +244,80 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
             value={formData.carrying_capacity}
             onChange={(e) => setFormData({ ...formData, carrying_capacity: e.target.value })}
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Truck Picture</Label>
+          <div className="flex flex-col gap-2">
+            {truckImagePreview && (
+              <div className="relative w-full h-32 rounded-lg overflow-hidden border">
+                <img src={truckImagePreview} alt="Truck" className="w-full h-full object-cover" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={() => {
+                    setTruckImage(null);
+                    setTruckImagePreview("");
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <Label htmlFor="truck_image" className="cursor-pointer">
+              <div className="border-2 border-dashed rounded-lg p-4 hover:border-primary transition-colors flex items-center justify-center gap-2">
+                <Upload className="h-4 w-4" />
+                <span className="text-sm">Upload Truck Photo</span>
+              </div>
+              <Input
+                id="truck_image"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageChange(e.target.files?.[0] || null, 'truck')}
+              />
+            </Label>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Driver Picture</Label>
+          <div className="flex flex-col gap-2">
+            {driverImagePreview && (
+              <div className="relative w-full h-32 rounded-lg overflow-hidden border">
+                <img src={driverImagePreview} alt="Driver" className="w-full h-full object-cover" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={() => {
+                    setDriverImage(null);
+                    setDriverImagePreview("");
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <Label htmlFor="driver_image" className="cursor-pointer">
+              <div className="border-2 border-dashed rounded-lg p-4 hover:border-primary transition-colors flex items-center justify-center gap-2">
+                <Upload className="h-4 w-4" />
+                <span className="text-sm">Upload Driver Photo</span>
+              </div>
+              <Input
+                id="driver_image"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => handleImageChange(e.target.files?.[0] || null, 'driver')}
+              />
+            </Label>
+          </div>
         </div>
       </div>
 

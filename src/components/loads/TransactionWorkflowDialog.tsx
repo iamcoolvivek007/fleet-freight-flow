@@ -219,6 +219,23 @@ export const TransactionWorkflowDialog = ({
     };
   };
 
+  const getBalanceDetails = () => {
+    const totalReceivedFromProvider = getTotalByType("advance_from_provider") + getTotalByType("balance_from_provider");
+    const totalPaidToDriver = getTotalByType("advance_to_driver") + getTotalByType("balance_to_driver");
+    const balanceToReceive = load.provider_freight - totalReceivedFromProvider;
+    const balanceToPay = (load.truck_freight || 0) - totalPaidToDriver;
+    const commissionReceived = getTotalByType("commission");
+    
+    return {
+      totalReceivedFromProvider,
+      totalPaidToDriver,
+      balanceToReceive,
+      balanceToPay,
+      commissionReceived,
+      profit: totalReceivedFromProvider - totalPaidToDriver - commissionReceived,
+    };
+  };
+
   const getCashInHand = () => {
     const cashTransactions = transactions.filter(t => t.payment_method === "cash");
     const cashIn = cashTransactions
@@ -231,42 +248,83 @@ export const TransactionWorkflowDialog = ({
   };
 
   const expected = getExpectedAmounts();
+  const balanceDetails = getBalanceDetails();
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Transaction Workflow</DialogTitle>
+            <DialogTitle>Transaction Workflow - Katha Management</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Financial Overview */}
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Provider Freight</p>
+                    <p className="text-lg font-semibold">₹{load.provider_freight.toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Truck Freight</p>
+                    <p className="text-lg font-semibold">₹{(load.truck_freight || 0).toLocaleString()}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Expected Profit</p>
+                    <p className="text-lg font-semibold text-green-600">₹{load.profit?.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Commission</p>
+                    <p className="text-lg font-semibold text-amber-600">₹{(assignment?.commission_amount || 0).toLocaleString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Balance Summary */}
+            {transactions.length > 0 && (
+              <Card className="border-primary/20">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-green-700">Balance to Receive</p>
+                      <p className="text-2xl font-bold text-green-600">₹{balanceDetails.balanceToReceive.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Received: ₹{balanceDetails.totalReceivedFromProvider.toLocaleString()} / ₹{load.provider_freight.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-blue-700">Balance to Pay</p>
+                      <p className="text-2xl font-bold text-blue-600">₹{balanceDetails.balanceToPay.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Paid: ₹{balanceDetails.totalPaidToDriver.toLocaleString()} / ₹{(load.truck_freight || 0).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Cash in Hand</p>
+                      <Badge variant="default" className="text-xl px-4 py-2">
+                        ₹{getCashInHand().toLocaleString()}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Progress Overview */}
             <Card>
               <CardContent className="pt-6 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Overall Progress</span>
+                  <span className="text-sm font-medium">Workflow Progress</span>
                   <span className="text-sm text-muted-foreground">
-                    {WORKFLOW_STEPS.filter((s) => getStepStatus(s.key) === "complete").length} of {WORKFLOW_STEPS.length}
+                    {WORKFLOW_STEPS.filter((s) => getStepStatus(s.key) === "complete").length} of {WORKFLOW_STEPS.length} complete
                   </span>
                 </div>
                 <Progress value={calculateProgress()} className="h-2" />
               </CardContent>
             </Card>
-
-            {/* Cash in Hand */}
-            {transactions.length > 0 && (
-              <Card className="bg-primary/5">
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Cash in Hand</span>
-                    <Badge variant="default" className="text-lg px-4 py-1">
-                      ₹{getCashInHand().toLocaleString()}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Workflow Steps */}
             <div className="space-y-4">

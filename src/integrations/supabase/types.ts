@@ -235,6 +235,7 @@ export type Database = {
         Row: {
           carrying_capacity: number
           created_at: string | null
+          driver_image_url: string | null
           driver_name: string
           driver_phone: string
           id: string
@@ -242,6 +243,7 @@ export type Database = {
           owner_name: string
           owner_phone: string
           third_party_contact: string | null
+          truck_image_url: string | null
           truck_length: number
           truck_number: string
           truck_type: Database["public"]["Enums"]["truck_type"]
@@ -251,6 +253,7 @@ export type Database = {
         Insert: {
           carrying_capacity: number
           created_at?: string | null
+          driver_image_url?: string | null
           driver_name: string
           driver_phone: string
           id?: string
@@ -258,6 +261,7 @@ export type Database = {
           owner_name: string
           owner_phone: string
           third_party_contact?: string | null
+          truck_image_url?: string | null
           truck_length: number
           truck_number: string
           truck_type: Database["public"]["Enums"]["truck_type"]
@@ -267,6 +271,7 @@ export type Database = {
         Update: {
           carrying_capacity?: number
           created_at?: string | null
+          driver_image_url?: string | null
           driver_name?: string
           driver_phone?: string
           id?: string
@@ -274,6 +279,7 @@ export type Database = {
           owner_name?: string
           owner_phone?: string
           third_party_contact?: string | null
+          truck_image_url?: string | null
           truck_length?: number
           truck_number?: string
           truck_type?: Database["public"]["Enums"]["truck_type"]

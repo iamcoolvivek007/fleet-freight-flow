@@ -50,6 +50,30 @@ export const TrucksList = ({ trucks, loading, onEdit }: TrucksListProps) => {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
+            {(truck.truck_image_url || truck.driver_image_url) && (
+              <div className="grid grid-cols-2 gap-2 pb-3 border-b">
+                {truck.truck_image_url && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Truck</p>
+                    <img 
+                      src={truck.truck_image_url} 
+                      alt="Truck" 
+                      className="w-full h-20 object-cover rounded-md"
+                    />
+                  </div>
+                )}
+                {truck.driver_image_url && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Driver</p>
+                    <img 
+                      src={truck.driver_image_url} 
+                      alt="Driver" 
+                      className="w-full h-20 object-cover rounded-md"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <div className="flex items-center text-sm">
                 <User className="mr-2 h-4 w-4 text-muted-foreground" />
