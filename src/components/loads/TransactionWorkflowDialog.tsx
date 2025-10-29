@@ -205,13 +205,29 @@ export const TransactionWorkflowDialog = ({
   };
 
   const getExpectedAmounts = () => {
+    const advanceFromProvider = getTotalByType("advance_from_provider");
+    const advanceToDriver = getTotalByType("advance_to_driver");
+    const balanceFromProvider = getTotalByType("balance_from_provider");
+    const balanceToDriver = getTotalByType("balance_to_driver");
+    
     return {
       advance_from_provider: load.provider_freight * 0.5,
-      balance_from_provider: load.provider_freight * 0.5,
+      balance_from_provider: load.provider_freight - advanceFromProvider,
       advance_to_driver: (load.truck_freight || 0) * 0.5,
-      balance_to_driver: (load.truck_freight || 0) * 0.5,
+      balance_to_driver: (load.truck_freight || 0) - advanceToDriver,
       commission: assignment?.commission_amount || 0,
     };
+  };
+
+  const getCashInHand = () => {
+    const cashTransactions = transactions.filter(t => t.payment_method === "cash");
+    const cashIn = cashTransactions
+      .filter(t => t.transaction_type.includes("from_provider"))
+      .reduce((sum, t) => sum + t.amount, 0);
+    const cashOut = cashTransactions
+      .filter(t => t.transaction_type.includes("to_driver") || t.transaction_type === "commission")
+      .reduce((sum, t) => sum + t.amount, 0);
+    return cashIn - cashOut;
   };
 
   const expected = getExpectedAmounts();
@@ -237,6 +253,20 @@ export const TransactionWorkflowDialog = ({
                 <Progress value={calculateProgress()} className="h-2" />
               </CardContent>
             </Card>
+
+            {/* Cash in Hand */}
+            {transactions.length > 0 && (
+              <Card className="bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Cash in Hand</span>
+                    <Badge variant="default" className="text-lg px-4 py-1">
+                      ₹{getCashInHand().toLocaleString()}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Workflow Steps */}
             <div className="space-y-4">

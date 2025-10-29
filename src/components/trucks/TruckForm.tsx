@@ -21,6 +21,7 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
     driver_phone: "",
     owner_name: "",
     owner_phone: "",
+    third_party_contact: "",
     truck_type: "open" as "open" | "container",
     truck_length: "",
     carrying_capacity: "",
@@ -35,6 +36,7 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
         driver_phone: truck.driver_phone,
         owner_name: truck.owner_name,
         owner_phone: truck.owner_phone,
+        third_party_contact: truck.third_party_contact || "",
         truck_type: truck.truck_type,
         truck_length: truck.truck_length?.toString() || "",
         carrying_capacity: truck.carrying_capacity?.toString() || "",
@@ -152,6 +154,17 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
             required
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="third_party_contact">3rd Party Contact</Label>
+        <Input
+          id="third_party_contact"
+          type="tel"
+          value={formData.third_party_contact}
+          onChange={(e) => setFormData({ ...formData, third_party_contact: e.target.value })}
+          placeholder="Optional third party contact number"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

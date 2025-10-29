@@ -241,6 +241,7 @@ export type Database = {
           is_active: boolean | null
           owner_name: string
           owner_phone: string
+          third_party_contact: string | null
           truck_length: number
           truck_number: string
           truck_type: Database["public"]["Enums"]["truck_type"]
@@ -256,6 +257,7 @@ export type Database = {
           is_active?: boolean | null
           owner_name: string
           owner_phone: string
+          third_party_contact?: string | null
           truck_length: number
           truck_number: string
           truck_type: Database["public"]["Enums"]["truck_type"]
@@ -271,6 +273,7 @@ export type Database = {
           is_active?: boolean | null
           owner_name?: string
           owner_phone?: string
+          third_party_contact?: string | null
           truck_length?: number
           truck_number?: string
           truck_type?: Database["public"]["Enums"]["truck_type"]
