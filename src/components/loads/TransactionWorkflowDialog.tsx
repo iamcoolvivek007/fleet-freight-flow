@@ -1,29 +1,70 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Check, Circle, Plus } from "lucide-react";
-import { Load } from "@/pages/Loads";
-import { TransactionFormDialog } from "./TransactionFormDialog";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Receipt,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Plus,
+} from "lucide-react";
+import { TransactionFormDialog } from "./TransactionFormDialog";
+import { ExpenseFormDialog } from "./ExpenseFormDialog";
+import { ChargeFormDialog } from "./ChargeFormDialog";
 
 interface Transaction {
   id: string;
+  amount: number;
   transaction_type: string;
+  payment_method: string;
+  transaction_date: string;
+  payment_details?: string;
+  notes?: string;
+}
+
+interface Expense {
+  id: string;
+  expense_type: string;
   amount: number;
   payment_method: string;
-  payment_details: string | null;
-  notes: string | null;
-  transaction_date: string;
+  payment_date: string;
+  description?: string;
+  receipt_url?: string;
+}
+
+interface Charge {
+  id: string;
+  charge_type: string;
+  amount: number;
+  charged_to: string;
+  status: string;
+  description?: string;
 }
 
 interface LoadAssignment {
   id: string;
-  commission_amount: number;
+  load_id: string;
+  truck_id: string;
   commission_percentage: number;
+  commission_amount: number;
+}
+
+interface Load {
+  id: string;
+  provider_freight: number;
+  truck_freight: number;
+  profit: number;
+  status: string;
 }
 
 interface TransactionWorkflowDialogProps {
@@ -34,48 +75,17 @@ interface TransactionWorkflowDialogProps {
 }
 
 const WORKFLOW_STEPS = [
-  { 
-    key: "advance_from_provider", 
-    label: "Advance from Provider",
-    color: "bg-green-500",
-    textColor: "text-green-700",
-    bgColor: "bg-green-50"
-  },
-  { 
-    key: "advance_to_driver", 
-    label: "Advance to Driver",
-    color: "bg-blue-500",
-    textColor: "text-blue-700",
-    bgColor: "bg-blue-50"
-  },
-  { 
-    key: "unloading", 
-    label: "Unloading Complete",
-    color: "bg-purple-500",
-    textColor: "text-purple-700",
-    bgColor: "bg-purple-50"
-  },
-  { 
-    key: "balance_from_provider", 
-    label: "Balance from Provider",
-    color: "bg-green-500",
-    textColor: "text-green-700",
-    bgColor: "bg-green-50"
-  },
-  { 
-    key: "balance_to_driver", 
-    label: "Balance to Driver",
-    color: "bg-blue-500",
-    textColor: "text-blue-700",
-    bgColor: "bg-blue-50"
-  },
-  { 
-    key: "commission", 
-    label: "Commission Received",
-    color: "bg-amber-500",
-    textColor: "text-amber-700",
-    bgColor: "bg-amber-50"
-  },
+  { key: "advance_from_provider", label: "Advance from Provider", icon: TrendingUp, color: "text-success" },
+  { key: "advance_to_driver", label: "Advance to Driver", icon: TrendingDown, color: "text-blue-500" },
+  { key: "expenses", label: "Trip Expenses", icon: Receipt, color: "text-warning" },
+  { key: "loading", label: "Loading Complete", icon: CheckCircle2, color: "text-primary" },
+  { key: "in_transit", label: "In Transit", icon: Clock, color: "text-primary" },
+  { key: "delivered", label: "Unloading Complete", icon: CheckCircle2, color: "text-primary" },
+  { key: "charges", label: "Additional Charges", icon: AlertCircle, color: "text-amber-500" },
+  { key: "balance_from_provider", label: "Balance from Provider", icon: TrendingUp, color: "text-success" },
+  { key: "balance_to_driver", label: "Balance to Driver", icon: TrendingDown, color: "text-blue-500" },
+  { key: "commission", label: "Commission Settlement", icon: DollarSign, color: "text-purple-500" },
+  { key: "completed", label: "Final Settlement", icon: CheckCircle2, color: "text-success" },
 ];
 
 export const TransactionWorkflowDialog = ({
@@ -85,18 +95,20 @@ export const TransactionWorkflowDialog = ({
   onRefresh,
 }: TransactionWorkflowDialogProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [charges, setCharges] = useState<Charge[]>([]);
   const [assignment, setAssignment] = useState<LoadAssignment | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [addTransactionOpen, setAddTransactionOpen] = useState(false);
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [addChargeOpen, setAddChargeOpen] = useState(false);
   const [selectedTransactionType, setSelectedTransactionType] = useState<string>("");
-  const [unloadingMarked, setUnloadingMarked] = useState(false);
 
   useEffect(() => {
     if (open) {
-      fetchTransactions();
       fetchAssignment();
     }
-  }, [open]);
+  }, [open, load.id]);
 
   const fetchAssignment = async () => {
     try {
@@ -108,31 +120,60 @@ export const TransactionWorkflowDialog = ({
 
       if (error) throw error;
       setAssignment(data);
+      
+      if (data) {
+        await Promise.all([
+          fetchTransactions(data.id),
+          fetchExpenses(data.id),
+          fetchCharges(data.id),
+        ]);
+      }
     } catch (error) {
       console.error("Error fetching assignment:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchTransactions = async () => {
-    try {
-      const { data: assignmentData } = await supabase
-        .from("load_assignments")
-        .select("id")
-        .eq("load_id", load.id)
-        .maybeSingle();
+  const fetchTransactions = async (assignmentId: string) => {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("load_assignment_id", assignmentId)
+      .order("transaction_date", { ascending: false });
 
-      if (!assignmentData) return;
-
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .eq("load_assignment_id", assignmentData.id)
-        .order("transaction_date", { ascending: true });
-
-      if (error) throw error;
-      setTransactions(data || []);
-    } catch (error) {
+    if (error) {
       console.error("Error fetching transactions:", error);
+    } else {
+      setTransactions(data || []);
+    }
+  };
+
+  const fetchExpenses = async (assignmentId: string) => {
+    const { data, error } = await supabase
+      .from("expenses")
+      .select("*")
+      .eq("load_assignment_id", assignmentId)
+      .order("payment_date", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching expenses:", error);
+    } else {
+      setExpenses(data || []);
+    }
+  };
+
+  const fetchCharges = async (assignmentId: string) => {
+    const { data, error } = await supabase
+      .from("charges")
+      .select("*")
+      .eq("load_assignment_id", assignmentId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching charges:", error);
+    } else {
+      setCharges(data || []);
     }
   };
 
@@ -141,321 +182,461 @@ export const TransactionWorkflowDialog = ({
     setAddTransactionOpen(true);
   };
 
-  const handleMarkUnloading = async () => {
-    setLoading(true);
+  const handleMarkStatus = async (status: "pending" | "assigned" | "in_transit" | "delivered" | "completed") => {
     try {
       const { error } = await supabase
         .from("loads")
-        .update({ status: "delivered" })
+        .update({ status })
         .eq("id", load.id);
 
       if (error) throw error;
-      
-      setUnloadingMarked(true);
-      toast.success("Unloading marked complete");
+      toast.success(`Load marked as ${status}`);
       onRefresh();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to mark unloading");
-    } finally {
-      setLoading(false);
+      fetchAssignment();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
     }
   };
 
-  const handleCompleteLoad = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from("loads")
-        .update({ status: "completed" })
-        .eq("id", load.id);
+  const calculateFinancials = () => {
+    const providerFreight = parseFloat(load.provider_freight?.toString() || "0");
+    const truckFreight = parseFloat(load.truck_freight?.toString() || "0");
+    const baseProfit = providerFreight - truckFreight;
+    const commission = parseFloat(assignment?.commission_amount?.toString() || "0");
+    
+    const totalExpenses = expenses.reduce(
+      (sum, e) => sum + parseFloat(e.amount?.toString() || "0"),
+      0
+    );
+    
+    const partyCharges = charges
+      .filter((c) => c.charged_to === "party" && c.status === "paid")
+      .reduce((sum, c) => sum + parseFloat(c.amount?.toString() || "0"), 0);
+    
+    const supplierCharges = charges
+      .filter((c) => c.charged_to === "supplier" && c.status === "paid")
+      .reduce((sum, c) => sum + parseFloat(c.amount?.toString() || "0"), 0);
 
-      if (error) throw error;
-      
-      toast.success("Load marked complete");
-      onRefresh();
-      onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to complete load");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const advanceFromProvider = transactions
+      .filter((t) => t.transaction_type === "advance_from_provider")
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
 
-  const getTransactionsByType = (type: string) => {
-    return transactions.filter((t) => t.transaction_type === type);
+    const balanceFromProvider = transactions
+      .filter((t) => t.transaction_type === "balance_from_provider")
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+
+    const advanceToDriver = transactions
+      .filter((t) => t.transaction_type === "advance_to_driver")
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+
+    const balanceToDriver = transactions
+      .filter((t) => t.transaction_type === "balance_to_driver")
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+
+    const totalReceived = advanceFromProvider + balanceFromProvider + partyCharges;
+    const totalPaid = advanceToDriver + balanceToDriver + totalExpenses + supplierCharges;
+    
+    const balanceToReceive = providerFreight + partyCharges - totalReceived;
+    const balanceToPay = truckFreight + supplierCharges - (advanceToDriver + balanceToDriver);
+    const cashInHand = totalReceived - totalPaid;
+    const netProfit = baseProfit + commission - totalExpenses + partyCharges - supplierCharges;
+
+    return {
+      providerFreight,
+      truckFreight,
+      baseProfit,
+      commission,
+      totalExpenses,
+      partyCharges,
+      supplierCharges,
+      totalReceived,
+      totalPaid,
+      balanceToReceive,
+      balanceToPay,
+      cashInHand,
+      netProfit,
+    };
   };
 
   const getStepStatus = (stepKey: string) => {
-    if (stepKey === "unloading") {
-      return load.status === "delivered" || load.status === "completed" ? "complete" : "pending";
+    if (stepKey === "loading") return load.status !== "pending";
+    if (stepKey === "in_transit") return ["in_transit", "delivered", "completed"].includes(load.status);
+    if (stepKey === "delivered") return ["delivered", "completed"].includes(load.status);
+    if (stepKey === "completed") return load.status === "completed";
+    
+    if (stepKey === "advance_from_provider") {
+      return transactions.some((t) => t.transaction_type === "advance_from_provider");
     }
-    const stepTransactions = getTransactionsByType(stepKey);
-    return stepTransactions.length > 0 ? "complete" : "pending";
-  };
-
-  const getTotalByType = (type: string) => {
-    return getTransactionsByType(type).reduce((sum, t) => sum + t.amount, 0);
+    if (stepKey === "advance_to_driver") {
+      return transactions.some((t) => t.transaction_type === "advance_to_driver");
+    }
+    if (stepKey === "balance_from_provider") {
+      return transactions.some((t) => t.transaction_type === "balance_from_provider");
+    }
+    if (stepKey === "balance_to_driver") {
+      return transactions.some((t) => t.transaction_type === "balance_to_driver");
+    }
+    if (stepKey === "commission") {
+      return transactions.some((t) => t.transaction_type === "commission");
+    }
+    if (stepKey === "expenses") {
+      return expenses.length > 0;
+    }
+    if (stepKey === "charges") {
+      return charges.length > 0;
+    }
+    
+    return false;
   };
 
   const calculateProgress = () => {
-    const completedSteps = WORKFLOW_STEPS.filter(
-      (step) => getStepStatus(step.key) === "complete"
-    ).length;
+    const completedSteps = WORKFLOW_STEPS.filter((step) => getStepStatus(step.key)).length;
     return (completedSteps / WORKFLOW_STEPS.length) * 100;
   };
 
-  const getExpectedAmounts = () => {
-    const advanceFromProvider = getTotalByType("advance_from_provider");
-    const advanceToDriver = getTotalByType("advance_to_driver");
-    const balanceFromProvider = getTotalByType("balance_from_provider");
-    const balanceToDriver = getTotalByType("balance_to_driver");
-    
-    return {
-      advance_from_provider: load.provider_freight * 0.5,
-      balance_from_provider: load.provider_freight - advanceFromProvider,
-      advance_to_driver: (load.truck_freight || 0) * 0.5,
-      balance_to_driver: (load.truck_freight || 0) - advanceToDriver,
-      commission: assignment?.commission_amount || 0,
-    };
-  };
+  const financials = calculateFinancials();
 
-  const getBalanceDetails = () => {
-    const totalReceivedFromProvider = getTotalByType("advance_from_provider") + getTotalByType("balance_from_provider");
-    const totalPaidToDriver = getTotalByType("advance_to_driver") + getTotalByType("balance_to_driver");
-    const balanceToReceive = load.provider_freight - totalReceivedFromProvider;
-    const balanceToPay = (load.truck_freight || 0) - totalPaidToDriver;
-    const commissionReceived = getTotalByType("commission");
-    
-    return {
-      totalReceivedFromProvider,
-      totalPaidToDriver,
-      balanceToReceive,
-      balanceToPay,
-      commissionReceived,
-      profit: totalReceivedFromProvider - totalPaidToDriver - commissionReceived,
-    };
-  };
-
-  const getCashInHand = () => {
-    const cashTransactions = transactions.filter(t => t.payment_method === "cash");
-    const cashIn = cashTransactions
-      .filter(t => t.transaction_type.includes("from_provider"))
-      .reduce((sum, t) => sum + t.amount, 0);
-    const cashOut = cashTransactions
-      .filter(t => t.transaction_type.includes("to_driver") || t.transaction_type === "commission")
-      .reduce((sum, t) => sum + t.amount, 0);
-    return cashIn - cashOut;
-  };
-
-  const expected = getExpectedAmounts();
-  const balanceDetails = getBalanceDetails();
+  if (!assignment) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Transaction Workflow</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-8 text-muted-foreground">
+            No truck assigned to this load yet. Please assign a truck first.
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Transaction Workflow - Katha Management</DialogTitle>
+            <DialogTitle>Katha Management - Full Transaction Workflow</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6">
-            {/* Financial Overview */}
+          {/* Financial Overview */}
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-lg">Financial Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Provider Freight</p>
+                  <p className="text-xl font-bold text-success">
+                    ₹{financials.providerFreight.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Truck Freight</p>
+                  <p className="text-xl font-bold text-blue-500">
+                    ₹{financials.truckFreight.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Base Profit</p>
+                  <p className="text-xl font-bold text-primary">
+                    ₹{financials.baseProfit.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Commission</p>
+                  <p className="text-xl font-bold text-purple-500">
+                    ₹{financials.commission.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Expenses</p>
+                  <p className="text-xl font-bold text-warning">
+                    ₹{financials.totalExpenses.toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Charges (+/-)</p>
+                  <p className="text-xl font-bold text-amber-500">
+                    ₹{(financials.partyCharges - financials.supplierCharges).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Net Profit</p>
+                  <p className={`text-xl font-bold ${financials.netProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                    ₹{financials.netProfit.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Balance Tracking */}
+          <div className="grid md:grid-cols-3 gap-4">
             <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Provider Freight</p>
-                    <p className="text-lg font-semibold">₹{load.provider_freight.toLocaleString()}</p>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-success" />
+                  To Receive from Party
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total</span>
+                    <span className="font-medium">₹{(financials.providerFreight + financials.partyCharges).toLocaleString()}</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Truck Freight</p>
-                    <p className="text-lg font-semibold">₹{(load.truck_freight || 0).toLocaleString()}</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Received</span>
+                    <span className="font-medium text-success">₹{financials.totalReceived.toLocaleString()}</span>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Expected Profit</p>
-                    <p className="text-lg font-semibold text-green-600">₹{load.profit?.toLocaleString() || 0}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">Commission</p>
-                    <p className="text-lg font-semibold text-amber-600">₹{(assignment?.commission_amount || 0).toLocaleString()}</p>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="font-medium">Balance</span>
+                    <span className={`font-bold text-lg ${financials.balanceToReceive > 0 ? "text-warning" : "text-success"}`}>
+                      ₹{financials.balanceToReceive.toLocaleString()}
+                    </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Balance Summary */}
-            {transactions.length > 0 && (
-              <Card className="border-primary/20">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-green-700">Balance to Receive</p>
-                      <p className="text-2xl font-bold text-green-600">₹{balanceDetails.balanceToReceive.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Received: ₹{balanceDetails.totalReceivedFromProvider.toLocaleString()} / ₹{load.provider_freight.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-blue-700">Balance to Pay</p>
-                      <p className="text-2xl font-bold text-blue-600">₹{balanceDetails.balanceToPay.toLocaleString()}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Paid: ₹{balanceDetails.totalPaidToDriver.toLocaleString()} / ₹{(load.truck_freight || 0).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Cash in Hand</p>
-                      <Badge variant="default" className="text-xl px-4 py-2">
-                        ₹{getCashInHand().toLocaleString()}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Progress Overview */}
             <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Workflow Progress</span>
-                  <span className="text-sm text-muted-foreground">
-                    {WORKFLOW_STEPS.filter((s) => getStepStatus(s.key) === "complete").length} of {WORKFLOW_STEPS.length} complete
-                  </span>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-blue-500" />
+                  To Pay to Supplier
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total</span>
+                    <span className="font-medium">₹{(financials.truckFreight + financials.supplierCharges).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Paid</span>
+                    <span className="font-medium text-blue-500">₹{(financials.totalPaid - financials.totalExpenses).toLocaleString()}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between">
+                    <span className="font-medium">Balance</span>
+                    <span className={`font-bold text-lg ${financials.balanceToPay > 0 ? "text-warning" : "text-success"}`}>
+                      ₹{financials.balanceToPay.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
-                <Progress value={calculateProgress()} className="h-2" />
               </CardContent>
             </Card>
 
-            {/* Workflow Steps */}
-            <div className="space-y-4">
-              {WORKFLOW_STEPS.map((step, index) => {
-                const status = getStepStatus(step.key);
-                const stepTransactions = getTransactionsByType(step.key);
-                const total = getTotalByType(step.key);
-                const isUnloading = step.key === "unloading";
-                const expectedAmount = expected[step.key as keyof typeof expected] || 0;
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-primary" />
+                  Cash in Hand
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-4">
+                  <p className={`text-3xl font-bold ${financials.cashInHand >= 0 ? "text-success" : "text-destructive"}`}>
+                    ₹{financials.cashInHand.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Running Balance
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-                return (
-                  <Card key={step.key} className={status === "complete" ? step.bgColor : ""}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          {status === "complete" ? (
-                            <div className={`w-8 h-8 rounded-full ${step.color} flex items-center justify-center`}>
-                              <Check className="w-5 h-5 text-white" />
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-full border-2 border-muted flex items-center justify-center">
-                              <Circle className="w-4 h-4 text-muted-foreground" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h3 className={`font-semibold ${status === "complete" ? step.textColor : ""}`}>
-                                {step.label}
-                              </h3>
-                              {!isUnloading && expectedAmount > 0 && (
-                                <p className="text-sm text-muted-foreground">
-                                  Expected: ₹{expectedAmount.toLocaleString()}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex gap-2 items-center">
-                              {!isUnloading && (
-                                <>
-                                  {total > 0 && (
-                                    <Badge variant={status === "complete" ? "default" : "outline"}>
-                                      ₹{total.toLocaleString()}
-                                    </Badge>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleAddTransaction(step.key)}
-                                  >
-                                    <Plus className="w-4 h-4 mr-1" />
-                                    Add
-                                  </Button>
-                                </>
-                              )}
-                              {isUnloading && status !== "complete" && (
-                                <Button
-                                  size="sm"
-                                  onClick={handleMarkUnloading}
-                                  disabled={loading}
-                                >
-                                  Mark Complete
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Transaction List */}
-                          {stepTransactions.length > 0 && (
-                            <div className="space-y-2 pl-4 border-l-2 border-muted">
-                              {stepTransactions.map((txn) => (
-                                <div key={txn.id} className="text-sm space-y-1">
-                                  <div className="flex justify-between">
-                                    <span className="font-medium">₹{txn.amount.toLocaleString()}</span>
-                                    <Badge variant="outline" className="text-xs">
-                                      {txn.payment_method.toUpperCase()}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-muted-foreground">
-                                    {new Date(txn.transaction_date).toLocaleDateString()}
-                                  </div>
-                                  {txn.payment_details && (
-                                    <div className="text-muted-foreground">
-                                      Details: {txn.payment_details}
-                                    </div>
-                                  )}
-                                  {txn.notes && (
-                                    <div className="text-muted-foreground">
-                                      Notes: {txn.notes}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">Workflow Progress</span>
+              <span className="text-muted-foreground">{Math.round(calculateProgress())}%</span>
             </div>
+            <Progress value={calculateProgress()} className="h-2" />
+          </div>
 
-            {/* Complete Load Button */}
-            {calculateProgress() === 100 && load.status !== "completed" && (
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleCompleteLoad}
-                disabled={loading}
-              >
-                Complete Load & Close Workflow
-              </Button>
-            )}
+          {/* Workflow Steps */}
+          <div className="space-y-3">
+            {WORKFLOW_STEPS.map((step) => {
+              const isComplete = getStepStatus(step.key);
+              const Icon = step.icon;
+              const stepTransactions = transactions.filter(
+                (t) => t.transaction_type === step.key
+              );
+              const stepExpenses = step.key === "expenses" ? expenses : [];
+              const stepCharges = step.key === "charges" ? charges : [];
+
+              return (
+                <Card key={step.key} className={isComplete ? "border-success/30" : ""}>
+                  <CardHeader className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Icon className={`h-5 w-5 ${step.color}`} />
+                        <span className="font-medium">{step.label}</span>
+                        {isComplete && (
+                          <Badge variant="outline" className="text-success border-success">
+                            Complete
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {!isComplete && step.key.includes("from_provider") && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddTransaction(step.key)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      )}
+                      {!isComplete && step.key.includes("to_driver") && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddTransaction(step.key)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      )}
+                      {!isComplete && step.key === "commission" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddTransaction(step.key)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add
+                        </Button>
+                      )}
+                      {!isComplete && step.key === "expenses" && (
+                        <Button
+                          size="sm"
+                          onClick={() => setAddExpenseOpen(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Expense
+                        </Button>
+                      )}
+                      {!isComplete && step.key === "charges" && (
+                        <Button
+                          size="sm"
+                          onClick={() => setAddChargeOpen(true)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Add Charge
+                        </Button>
+                      )}
+                      
+                      {step.key === "loading" && load.status === "pending" && (
+                        <Button size="sm" onClick={() => handleMarkStatus("in_transit")}>
+                          Mark Loaded
+                        </Button>
+                      )}
+                      {step.key === "delivered" && load.status === "in_transit" && (
+                        <Button size="sm" onClick={() => handleMarkStatus("delivered")}>
+                          Mark Delivered
+                        </Button>
+                      )}
+                      {step.key === "completed" && load.status === "delivered" && (
+                        <Button size="sm" onClick={() => handleMarkStatus("completed")}>
+                          Complete
+                        </Button>
+                      )}
+                    </div>
+                  </CardHeader>
+                  
+                  {(stepTransactions.length > 0 || stepExpenses.length > 0 || stepCharges.length > 0) && (
+                    <CardContent className="py-2">
+                      {stepTransactions.map((transaction) => (
+                        <div
+                          key={transaction.id}
+                          className="flex justify-between items-center py-2 px-3 bg-muted/50 rounded mb-2"
+                        >
+                          <div>
+                            <p className="font-medium">₹{parseFloat(transaction.amount?.toString()).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(transaction.transaction_date).toLocaleDateString()} • {transaction.payment_method}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {stepExpenses.map((expense) => (
+                        <div
+                          key={expense.id}
+                          className="flex justify-between items-center py-2 px-3 bg-warning/10 rounded mb-2"
+                        >
+                          <div>
+                            <p className="font-medium">{expense.expense_type.replace("_", " ").toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(expense.payment_date).toLocaleDateString()} • ₹{parseFloat(expense.amount?.toString()).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {stepCharges.map((charge) => (
+                        <div
+                          key={charge.id}
+                          className="flex justify-between items-center py-2 px-3 bg-amber-500/10 rounded mb-2"
+                        >
+                          <div>
+                            <p className="font-medium">{charge.charge_type.replace("_", " ").toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Charged to {charge.charged_to} • ₹{parseFloat(charge.amount?.toString()).toLocaleString()} • {charge.status}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>
 
       {assignment && (
-        <TransactionFormDialog
-          open={addTransactionOpen}
-          onOpenChange={setAddTransactionOpen}
-          loadAssignmentId={assignment.id}
-          transactionType={selectedTransactionType}
-          onSuccess={() => {
-            fetchTransactions();
-            onRefresh();
-            setAddTransactionOpen(false);
-          }}
-        />
+        <>
+          <TransactionFormDialog
+            open={addTransactionOpen}
+            onOpenChange={setAddTransactionOpen}
+            loadAssignmentId={assignment.id}
+            transactionType={selectedTransactionType}
+            onSuccess={() => {
+              fetchAssignment();
+              onRefresh();
+            }}
+          />
+          
+          <ExpenseFormDialog
+            open={addExpenseOpen}
+            onOpenChange={setAddExpenseOpen}
+            loadAssignmentId={assignment.id}
+            onSuccess={() => {
+              fetchAssignment();
+              onRefresh();
+            }}
+          />
+          
+          <ChargeFormDialog
+            open={addChargeOpen}
+            onOpenChange={setAddChargeOpen}
+            loadAssignmentId={assignment.id}
+            onSuccess={() => {
+              fetchAssignment();
+              onRefresh();
+            }}
+          />
+        </>
       )}
     </>
   );

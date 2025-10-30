@@ -14,14 +14,100 @@ export type Database = {
   }
   public: {
     Tables: {
+      charges: {
+        Row: {
+          amount: number
+          charge_type: string
+          charged_to: string
+          created_at: string
+          description: string | null
+          id: string
+          load_assignment_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          charge_type: string
+          charged_to: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          load_assignment_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          charge_type?: string
+          charged_to?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          load_assignment_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          expense_type: string
+          id: string
+          load_assignment_id: string
+          payment_date: string
+          payment_method: string
+          receipt_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          expense_type: string
+          id?: string
+          load_assignment_id: string
+          payment_date?: string
+          payment_method: string
+          receipt_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          expense_type?: string
+          id?: string
+          load_assignment_id?: string
+          payment_date?: string
+          payment_method?: string
+          receipt_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       load_assignments: {
         Row: {
           assigned_at: string | null
           commission_amount: number | null
           commission_percentage: number | null
           created_at: string | null
+          final_settlement_date: string | null
           id: string
           load_id: string
+          net_profit: number | null
+          settlement_status: string | null
+          total_charges: number | null
+          total_expenses: number | null
           truck_id: string
           updated_at: string | null
           user_id: string
@@ -31,8 +117,13 @@ export type Database = {
           commission_amount?: number | null
           commission_percentage?: number | null
           created_at?: string | null
+          final_settlement_date?: string | null
           id?: string
           load_id: string
+          net_profit?: number | null
+          settlement_status?: string | null
+          total_charges?: number | null
+          total_expenses?: number | null
           truck_id: string
           updated_at?: string | null
           user_id: string
@@ -42,8 +133,13 @@ export type Database = {
           commission_amount?: number | null
           commission_percentage?: number | null
           created_at?: string | null
+          final_settlement_date?: string | null
           id?: string
           load_id?: string
+          net_profit?: number | null
+          settlement_status?: string | null
+          total_charges?: number | null
+          total_expenses?: number | null
           truck_id?: string
           updated_at?: string | null
           user_id?: string

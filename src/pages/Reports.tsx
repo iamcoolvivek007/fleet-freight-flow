@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, DollarSign, Package, Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, DollarSign, Package, Download, FileText, Users, Truck } from "lucide-react";
+import { PartyBalanceSheet } from "@/components/reports/PartyBalanceSheet";
+import { toast } from "sonner";
 
 interface ReportData {
   totalRevenue: number;
@@ -12,11 +15,15 @@ interface ReportData {
   totalLoads: number;
   completedLoads: number;
   avgProfit: number;
+  totalExpenses: number;
+  totalReceivables: number;
+  totalPayables: number;
+  cashInHand: number;
 }
 
 const Reports = () => {
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("monthly");
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
   useEffect(() => {
@@ -29,7 +36,6 @@ const Reports = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Calculate date range based on period
       const now = new Date();
       let startDate = new Date();
       
@@ -45,7 +51,7 @@ const Reports = () => {
           break;
       }
 
-      const [loadsRes, transactionsRes] = await Promise.all([
+      const [loadsRes, transactionsRes, expensesRes, assignmentsRes] = await Promise.all([
         supabase
           .from("loads")
           .select("*")
@@ -56,12 +62,27 @@ const Reports = () => {
           .select("*")
           .eq("user_id", user.id)
           .gte("transaction_date", startDate.toISOString()),
+        supabase
+          .from("expenses")
+          .select("*")
+          .eq("user_id", user.id)
+          .gte("payment_date", startDate.toISOString()),
+        supabase
+          .from("load_assignments")
+          .select("*")
+          .eq("user_id", user.id),
       ]);
 
       const totalRevenue =
         transactionsRes.data
           ?.filter((t) => t.transaction_type?.includes("from_provider"))
           .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0) || 0;
+
+      const totalExpenses =
+        expensesRes.data?.reduce(
+          (sum, e) => sum + parseFloat(e.amount?.toString() || "0"),
+          0
+        ) || 0;
 
       const totalProfit =
         loadsRes.data?.reduce(
@@ -72,15 +93,40 @@ const Reports = () => {
       const completedLoads =
         loadsRes.data?.filter((l) => l.status === "completed").length || 0;
 
+      // Calculate receivables and payables
+      const totalFreight = loadsRes.data?.reduce(
+        (sum, l) => sum + parseFloat(l.provider_freight?.toString() || "0"),
+        0
+      ) || 0;
+
+      const totalTruckCost = loadsRes.data?.reduce(
+        (sum, l) => sum + parseFloat(l.truck_freight?.toString() || "0"),
+        0
+      ) || 0;
+
+      const totalPaidToDrivers =
+        transactionsRes.data
+          ?.filter((t) => t.transaction_type?.includes("to_driver"))
+          .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0) || 0;
+
+      const totalReceivables = totalFreight - totalRevenue;
+      const totalPayables = totalTruckCost - totalPaidToDrivers;
+      const cashInHand = totalRevenue - totalPaidToDrivers - totalExpenses;
+
       setReportData({
         totalRevenue,
         totalProfit,
         totalLoads: loadsRes.data?.length || 0,
         completedLoads,
         avgProfit: completedLoads > 0 ? totalProfit / completedLoads : 0,
+        totalExpenses,
+        totalReceivables,
+        totalPayables,
+        cashInHand,
       });
     } catch (error) {
       console.error("Error fetching report data:", error);
+      toast.error("Failed to fetch report data");
     } finally {
       setLoading(false);
     }
@@ -91,11 +137,13 @@ const Reports = () => {
     value,
     icon: Icon,
     color,
+    subtitle,
   }: {
     title: string;
     value: string;
     icon: any;
     color: string;
+    subtitle?: string;
   }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -108,6 +156,9 @@ const Reports = () => {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -117,7 +168,7 @@ const Reports = () => {
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -129,9 +180,9 @@ const Reports = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
           <p className="text-muted-foreground">
-            Performance analytics and insights
+            Comprehensive analytics and insights
           </p>
         </div>
         <Select
@@ -151,61 +202,142 @@ const Reports = () => {
         </Select>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Revenue"
-          value={`₹${reportData?.totalRevenue.toLocaleString() || 0}`}
-          icon={DollarSign}
-          color="bg-primary/10 text-primary"
-        />
-        <StatCard
-          title="Total Profit"
-          value={`₹${reportData?.totalProfit.toLocaleString() || 0}`}
-          icon={TrendingUp}
-          color="bg-success/10 text-success"
-        />
-        <StatCard
-          title="Total Loads"
-          value={reportData?.totalLoads.toString() || "0"}
-          icon={Package}
-          color="bg-accent/10 text-accent"
-        />
-        <StatCard
-          title="Avg Profit/Load"
-          value={`₹${reportData?.avgProfit.toLocaleString() || 0}`}
-          icon={TrendingUp}
-          color="bg-warning/10 text-warning"
-        />
-      </div>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">
+            <FileText className="h-4 w-4 mr-2" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="party">
+            <Users className="h-4 w-4 mr-2" />
+            Party Balance
+          </TabsTrigger>
+          <TabsTrigger value="supplier">
+            <Truck className="h-4 w-4 mr-2" />
+            Driver Balance
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between items-center pb-2 border-b">
-            <span className="text-muted-foreground">Completed Loads</span>
-            <span className="font-semibold">{reportData?.completedLoads}</span>
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Revenue"
+              value={`₹${reportData?.totalRevenue.toLocaleString() || 0}`}
+              icon={DollarSign}
+              color="bg-success/10 text-success"
+              subtitle="Received from parties"
+            />
+            <StatCard
+              title="Total Expenses"
+              value={`₹${reportData?.totalExpenses.toLocaleString() || 0}`}
+              icon={TrendingUp}
+              color="bg-warning/10 text-warning"
+              subtitle="All trip expenses"
+            />
+            <StatCard
+              title="Net Profit"
+              value={`₹${reportData?.totalProfit.toLocaleString() || 0}`}
+              icon={TrendingUp}
+              color="bg-success/10 text-success"
+              subtitle={`Avg: ₹${reportData?.avgProfit.toLocaleString() || 0}/load`}
+            />
+            <StatCard
+              title="Total Loads"
+              value={reportData?.totalLoads.toString() || "0"}
+              icon={Package}
+              color="bg-primary/10 text-primary"
+              subtitle={`${reportData?.completedLoads || 0} completed`}
+            />
           </div>
-          <div className="flex justify-between items-center pb-2 border-b">
-            <span className="text-muted-foreground">Pending Loads</span>
-            <span className="font-semibold">
-              {(reportData?.totalLoads || 0) - (reportData?.completedLoads || 0)}
-            </span>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Outstanding Receivables"
+              value={`₹${reportData?.totalReceivables.toLocaleString() || 0}`}
+              icon={TrendingUp}
+              color="bg-amber-500/10 text-amber-500"
+              subtitle="Balance from parties"
+            />
+            <StatCard
+              title="Outstanding Payables"
+              value={`₹${reportData?.totalPayables.toLocaleString() || 0}`}
+              icon={DollarSign}
+              color="bg-blue-500/10 text-blue-500"
+              subtitle="Balance to drivers"
+            />
+            <StatCard
+              title="Cash in Hand"
+              value={`₹${reportData?.cashInHand.toLocaleString() || 0}`}
+              icon={DollarSign}
+              color="bg-primary/10 text-primary"
+              subtitle="Current balance"
+            />
+            <StatCard
+              title="Success Rate"
+              value={
+                reportData?.totalLoads
+                  ? `${Math.round(
+                      (reportData.completedLoads / reportData.totalLoads) * 100
+                    )}%`
+                  : "0%"
+              }
+              icon={TrendingUp}
+              color="bg-success/10 text-success"
+              subtitle="Completion rate"
+            />
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Success Rate</span>
-            <span className="font-semibold text-success">
-              {reportData?.totalLoads
-                ? Math.round(
-                    (reportData.completedLoads / reportData.totalLoads) * 100
-                  )
-                : 0}
-              %
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Profit & Loss Summary</span>
+                <Button size="sm" variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center pb-2 border-b">
+                <span className="text-muted-foreground">Total Revenue</span>
+                <span className="font-semibold text-success">
+                  + ₹{reportData?.totalRevenue.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b">
+                <span className="text-muted-foreground">Total Expenses</span>
+                <span className="font-semibold text-warning">
+                  - ₹{reportData?.totalExpenses.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b">
+                <span className="text-muted-foreground">Driver Payments</span>
+                <span className="font-semibold text-blue-500">
+                  - ₹{reportData?.totalPayables.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between items-center pt-2">
+                <span className="font-semibold">Net Profit</span>
+                <span className="font-bold text-xl text-success">
+                  ₹{reportData?.totalProfit.toLocaleString()}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="party">
+          <PartyBalanceSheet />
+        </TabsContent>
+
+        <TabsContent value="supplier">
+          <Card>
+            <CardContent className="p-6 text-center text-muted-foreground">
+              Driver balance sheet coming soon...
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
