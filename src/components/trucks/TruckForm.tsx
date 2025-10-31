@@ -26,6 +26,7 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
     driver_phone: "",
     owner_name: "",
     owner_phone: "",
+    third_party_name: "",
     third_party_contact: "",
     truck_type: "open" as "open" | "container",
     truck_length: "",
@@ -41,6 +42,7 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
         driver_phone: truck.driver_phone,
         owner_name: truck.owner_name,
         owner_phone: truck.owner_phone,
+        third_party_name: truck.third_party_name || "",
         third_party_contact: truck.third_party_contact || "",
         truck_type: truck.truck_type,
         truck_length: truck.truck_length?.toString() || "",
@@ -213,15 +215,45 @@ export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="third_party_name">3rd Party Name (Optional)</Label>
+          <Input
+            id="third_party_name"
+            value={formData.third_party_name}
+            onChange={(e) => setFormData({ ...formData, third_party_name: e.target.value })}
+            placeholder="Enter 3rd party name"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="third_party_contact">3rd Party Contact (Optional)</Label>
+          <Input
+            id="third_party_contact"
+            type="tel"
+            value={formData.third_party_contact}
+            onChange={(e) => setFormData({ ...formData, third_party_contact: e.target.value })}
+            placeholder="Enter 3rd party phone"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="third_party_contact">3rd Party Contact</Label>
-        <Input
-          id="third_party_contact"
-          type="tel"
-          value={formData.third_party_contact}
-          onChange={(e) => setFormData({ ...formData, third_party_contact: e.target.value })}
-          placeholder="Optional third party contact number"
-        />
+        <Label>Truck Status</Label>
+        <div className="flex items-center space-x-2">
+          <Button
+            type="button"
+            variant={formData.is_active ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
+          >
+            {formData.is_active ? "Active" : "Inactive"}
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {formData.is_active 
+              ? "This truck can be assigned to loads" 
+              : "This truck cannot be assigned to new loads"}
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

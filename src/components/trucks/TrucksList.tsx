@@ -2,7 +2,7 @@ import { Truck } from "@/pages/Trucks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Phone, User } from "lucide-react";
+import { Edit, Phone, User, Truck as TruckIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TrucksListProps {
@@ -97,6 +97,22 @@ export const TrucksList = ({ trucks, loading, onEdit }: TrucksListProps) => {
                 {truck.owner_phone}
               </div>
             </div>
+
+            {(truck.third_party_name || truck.third_party_contact) && (
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center text-sm">
+                  <TruckIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">3rd Party:</span>
+                  <span className="ml-1">{truck.third_party_name || "N/A"}</span>
+                </div>
+                {truck.third_party_contact && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Phone className="mr-2 h-4 w-4" />
+                    {truck.third_party_contact}
+                  </div>
+                )}
+              </div>
+            )}
 
             {(truck.truck_length || truck.carrying_capacity) && (
               <div className="flex gap-4 text-sm pt-2 border-t">

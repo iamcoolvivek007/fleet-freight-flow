@@ -73,6 +73,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
 
       const payload = {
         ...formData,
+        status: (formData.status || "pending") as "pending" | "assigned" | "in_transit" | "delivered" | "completed",
         material_weight: parseFloat(formData.material_weight),
         provider_freight: parseFloat(formData.provider_freight),
         truck_freight: formData.truck_freight ? parseFloat(formData.truck_freight) : null,
@@ -87,7 +88,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
         if (error) throw error;
         toast.success("Load updated successfully");
       } else {
-        const { error } = await supabase.from("loads").insert(payload);
+        const { error } = await supabase.from("loads").insert([payload]);
         if (error) throw error;
         toast.success("Load created successfully");
       }

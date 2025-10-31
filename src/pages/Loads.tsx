@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LoadForm } from "@/components/loads/LoadForm";
 import { LoadsList } from "@/components/loads/LoadsList";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SearchBar } from "@/components/common/SearchBar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface Load {
   id: string;
+  user_id: string;
   load_provider_id: string;
   loading_location: string;
   unloading_location: string;
@@ -15,25 +18,37 @@ export interface Load {
   material_weight: number;
   provider_freight: number;
   truck_freight: number | null;
-  profit: number | null;
-  status: "pending" | "assigned" | "in_transit" | "delivered" | "completed";
+  status: string;
+  profit?: number;
   created_at: string;
 }
 
 const Loads = () => {
   const [loads, setLoads] = useState<Load[]>([]);
+  const [filteredLoads, setFilteredLoads] = useState<Load[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLoad, setEditingLoad] = useState<Load | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchLoads();
   }, []);
 
+  useEffect(() => {
+    filterLoads();
+  }, [loads, searchQuery, statusFilter]);
+
   const fetchLoads = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      if (!user) {
+        console.error("No user found");
+        return;
+      }
 
       const { data, error } = await supabase
         .from("loads")
@@ -50,13 +65,35 @@ const Loads = () => {
     }
   };
 
+  const filterLoads = () => {
+    let filtered = loads;
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(load => load.status === statusFilter);
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (load) =>
+          load.loading_location.toLowerCase().includes(query) ||
+          load.unloading_location.toLowerCase().includes(query) ||
+          load.material_description.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredLoads(filtered);
+  };
+
   const handleEdit = (load: Load) => {
     setEditingLoad(load);
-    setDialogOpen(true);
+    setIsDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false);
+    setIsDialogOpen(false);
     setEditingLoad(null);
   };
 
@@ -65,37 +102,65 @@ const Loads = () => {
     handleCloseDialog();
   };
 
+  const statusCounts = {
+    pending: loads.filter(l => l.status === 'pending').length,
+    assigned: loads.filter(l => l.status === 'assigned').length,
+    in_transit: loads.filter(l => l.status === 'in_transit').length,
+    delivered: loads.filter(l => l.status === 'delivered').length,
+    completed: loads.filter(l => l.status === 'completed').length,
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Loads</h1>
-          <p className="text-muted-foreground">
-            Manage freight loads and assignments
+          <h1 className="text-3xl font-bold">Loads</h1>
+          <p className="text-muted-foreground mt-1">
+            {statusCounts.pending} pending • {statusCounts.assigned} assigned • {statusCounts.completed} completed
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Create Load
         </Button>
       </div>
 
-      <LoadsList 
-        loads={loads} 
-        loading={loading} 
+      <div className="flex flex-col sm:flex-row gap-4">
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search by location or material..."
+          className="flex-1"
+        />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status ({loads.length})</SelectItem>
+            <SelectItem value="pending">Pending ({statusCounts.pending})</SelectItem>
+            <SelectItem value="assigned">Assigned ({statusCounts.assigned})</SelectItem>
+            <SelectItem value="in_transit">In Transit ({statusCounts.in_transit})</SelectItem>
+            <SelectItem value="delivered">Delivered ({statusCounts.delivered})</SelectItem>
+            <SelectItem value="completed">Completed ({statusCounts.completed})</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <LoadsList
+        loads={filteredLoads}
+        loading={loading}
         onEdit={handleEdit}
         onRefresh={fetchLoads}
       />
 
-      <Dialog open={dialogOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {editingLoad ? "Edit Load" : "Create New Load"}
-            </DialogTitle>
+            <DialogTitle>{editingLoad ? "Edit Load" : "Create New Load"}</DialogTitle>
           </DialogHeader>
-          <LoadForm 
-            load={editingLoad} 
+          <LoadForm
+            load={editingLoad}
             onSuccess={handleSuccess}
             onCancel={handleCloseDialog}
           />

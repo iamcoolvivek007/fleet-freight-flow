@@ -339,6 +339,7 @@ export type Database = {
           owner_name: string
           owner_phone: string
           third_party_contact: string | null
+          third_party_name: string | null
           truck_image_url: string | null
           truck_length: number
           truck_number: string
@@ -357,6 +358,7 @@ export type Database = {
           owner_name: string
           owner_phone: string
           third_party_contact?: string | null
+          third_party_name?: string | null
           truck_image_url?: string | null
           truck_length: number
           truck_number: string
@@ -375,6 +377,7 @@ export type Database = {
           owner_name?: string
           owner_phone?: string
           third_party_contact?: string | null
+          third_party_name?: string | null
           truck_image_url?: string | null
           truck_length?: number
           truck_number?: string

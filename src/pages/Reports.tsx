@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, DollarSign, Package, Download, FileText, Users, Truck } from "lucide-react";
 import { PartyBalanceSheet } from "@/components/reports/PartyBalanceSheet";
+import { DriverBalanceSheet } from "@/components/reports/DriverBalanceSheet";
 import { toast } from "sonner";
 
 interface ReportData {
@@ -331,11 +332,7 @@ const Reports = () => {
         </TabsContent>
 
         <TabsContent value="supplier">
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              Driver balance sheet coming soon...
-            </CardContent>
-          </Card>
+          <DriverBalanceSheet />
         </TabsContent>
       </Tabs>
     </div>

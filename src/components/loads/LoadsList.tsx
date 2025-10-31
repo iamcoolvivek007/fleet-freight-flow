@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit, MapPin, Package, TrendingUp, Truck, Receipt } from "lucide-react";
-import { Load } from "@/pages/Loads";
+import type { Load } from "@/pages/Loads";
 import { LoadProvider } from "@/pages/LoadProviders";
 import { AssignTruckDialog } from "./AssignTruckDialog";
 import { TransactionWorkflowDialog } from "./TransactionWorkflowDialog";
