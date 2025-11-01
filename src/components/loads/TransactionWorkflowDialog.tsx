@@ -63,8 +63,9 @@ interface Load {
   id: string;
   provider_freight: number;
   truck_freight: number;
-  profit: number;
+  profit?: number;
   status: string;
+  payment_model?: string;
 }
 
 interface TransactionWorkflowDialogProps {
@@ -190,12 +191,30 @@ export const TransactionWorkflowDialog = ({
         .eq("id", load.id);
 
       if (error) throw error;
-      toast.success(`Load marked as ${status}`);
+
+      // If marking as completed, reactivate the truck
+      if (status === "completed" && assignment) {
+        const { error: truckError } = await supabase
+          .from("trucks")
+          .update({
+            is_active: true,
+            inactive_reason: null,
+          })
+          .eq("id", assignment.truck_id);
+
+        if (truckError) {
+          console.error("Error reactivating truck:", truckError);
+          toast.error("Load completed but failed to reactivate truck");
+        } else {
+          toast.success("Load completed and truck reactivated successfully");
+        }
+      } else {
+        toast.success(`Load marked as ${status}`);
+      }
+
       onRefresh();
-      fetchAssignment();
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update status");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update load status");
     }
   };
 

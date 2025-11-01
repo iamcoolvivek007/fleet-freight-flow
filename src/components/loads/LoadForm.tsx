@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Load } from "@/pages/Loads";
 import { LoadProvider } from "@/pages/LoadProviders";
+import { PaymentModelSelector } from "./PaymentModelSelector";
 
 interface LoadFormProps {
   load?: Load | null;
@@ -27,6 +28,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
     provider_freight: "",
     truck_freight: "",
     status: "pending" as Load["status"],
+    payment_model: "standard",
   });
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
         provider_freight: load.provider_freight?.toString() || "",
         truck_freight: load.truck_freight?.toString() || "",
         status: load.status,
+        payment_model: load.payment_model || "standard",
       });
     }
   }, [load]);
@@ -77,6 +80,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
         material_weight: parseFloat(formData.material_weight),
         provider_freight: parseFloat(formData.provider_freight),
         truck_freight: formData.truck_freight ? parseFloat(formData.truck_freight) : null,
+        payment_model: formData.payment_model || "standard",
         user_id: user.id,
       };
 
@@ -103,6 +107,11 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentModelSelector
+        value={formData.payment_model}
+        onChange={(value) => setFormData({ ...formData, payment_model: value })}
+      />
+
       <div className="space-y-2">
         <Label htmlFor="load_provider_id">Load Provider *</Label>
         <Select

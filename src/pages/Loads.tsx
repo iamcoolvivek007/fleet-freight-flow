@@ -20,6 +20,7 @@ export interface Load {
   truck_freight: number | null;
   status: string;
   profit?: number;
+  payment_model?: string;
   created_at: string;
 }
 

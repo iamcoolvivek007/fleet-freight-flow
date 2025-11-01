@@ -69,43 +69,55 @@ export const AssignTruckDialog = ({ load, open, onOpenChange, onSuccess }: Assig
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!selectedTruck || !truckFreight) return;
 
+    setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const profit = calculateProfit();
-      const commissionAmount = calculateCommission();
+      const truckFreightNum = parseFloat(truckFreight);
+      const commissionPct = parseFloat(commissionPercentage);
+      const commissionAmt = (truckFreightNum * commissionPct) / 100;
 
-      // Update load with truck freight and status
+      // Update load status and freight
       const { error: loadError } = await supabase
         .from("loads")
         .update({
-          truck_freight: parseFloat(truckFreight),
-          profit: profit,
-          status: "assigned"
+          status: "assigned",
+          truck_freight: truckFreightNum,
+          profit: load.provider_freight - truckFreightNum,
         })
         .eq("id", load.id);
 
       if (loadError) throw loadError;
 
       // Create load assignment
-      const { error: assignmentError } = await supabase
+      const { error: assignError } = await supabase
         .from("load_assignments")
         .insert({
           load_id: load.id,
           truck_id: selectedTruck,
+          commission_percentage: commissionPct,
+          commission_amount: commissionAmt,
           user_id: user.id,
-          commission_percentage: parseFloat(commissionPercentage),
-          commission_amount: commissionAmount,
         });
 
-      if (assignmentError) throw assignmentError;
+      if (assignError) throw assignError;
 
-      toast.success("Truck assigned successfully");
+      // Auto-deactivate truck with reason
+      const { error: truckError } = await supabase
+        .from("trucks")
+        .update({
+          is_active: false,
+          inactive_reason: 'assigned_to_load',
+        })
+        .eq("id", selectedTruck);
+
+      if (truckError) throw truckError;
+
+      toast.success("Truck assigned successfully and marked as inactive");
       onSuccess();
-      onOpenChange(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to assign truck");
     } finally {

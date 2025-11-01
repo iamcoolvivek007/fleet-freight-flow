@@ -208,6 +208,7 @@ export type Database = {
           loading_location: string
           material_description: string
           material_weight: number
+          payment_model: string | null
           profit: number | null
           provider_freight: number
           status: Database["public"]["Enums"]["load_status"] | null
@@ -223,6 +224,7 @@ export type Database = {
           loading_location: string
           material_description: string
           material_weight: number
+          payment_model?: string | null
           profit?: number | null
           provider_freight: number
           status?: Database["public"]["Enums"]["load_status"] | null
@@ -238,6 +240,7 @@ export type Database = {
           loading_location?: string
           material_description?: string
           material_weight?: number
+          payment_model?: string | null
           profit?: number | null
           provider_freight?: number
           status?: Database["public"]["Enums"]["load_status"] | null
@@ -335,6 +338,7 @@ export type Database = {
           driver_name: string
           driver_phone: string
           id: string
+          inactive_reason: string | null
           is_active: boolean | null
           owner_name: string
           owner_phone: string
@@ -354,6 +358,7 @@ export type Database = {
           driver_name: string
           driver_phone: string
           id?: string
+          inactive_reason?: string | null
           is_active?: boolean | null
           owner_name: string
           owner_phone: string
@@ -373,6 +378,7 @@ export type Database = {
           driver_name?: string
           driver_phone?: string
           id?: string
+          inactive_reason?: string | null
           is_active?: boolean | null
           owner_name?: string
           owner_phone?: string

@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Truck, Package, DollarSign, TrendingUp, Clock } from "lucide-react";
+import { Truck, Package, DollarSign, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CashFlowByMethod } from "@/components/dashboard/CashFlowByMethod";
+import { getCashBalanceByMethod } from "@/lib/financialCalculations";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardStats {
   totalTrucks: number;
   activeTrucks: number;
+  assignedTrucks: number;
   totalLoads: number;
   activeLoads: number;
   totalRevenue: number;
   totalProfit: number;
   pendingTransactions: number;
+  cashBalance: number;
+  upiBalance: number;
+  bankBalance: number;
 }
 
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardStats();
@@ -27,33 +36,59 @@ const Dashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [trucksRes, loadsRes, transactionsRes] = await Promise.all([
+      const [trucksRes, loadsRes, transactionsRes, expensesRes] = await Promise.all([
         supabase.from("trucks").select("*", { count: "exact" }).eq("user_id", user.id),
         supabase.from("loads").select("*", { count: "exact" }).eq("user_id", user.id),
-        supabase.from("transactions").select("amount, transaction_type").eq("user_id", user.id),
+        supabase.from("transactions").select("*").eq("user_id", user.id),
+        supabase.from("expenses").select("*").eq("user_id", user.id),
       ]);
 
       const activeTrucks = trucksRes.data?.filter((t) => t.is_active).length || 0;
+      const assignedTrucks = trucksRes.data?.filter(
+        (t) => !t.is_active && t.inactive_reason === 'assigned_to_load'
+      ).length || 0;
+      
       const activeLoads = loadsRes.data?.filter((l) => 
         l.status === "assigned" || l.status === "in_transit"
       ).length || 0;
 
       const totalRevenue = transactionsRes.data
-        ?.filter((t) => t.transaction_type?.includes("from_provider"))
+        ?.filter((t) => t.transaction_type?.includes("from_provider") || t.transaction_type === "commission")
         .reduce((sum, t) => sum + Number(t.amount || 0), 0) || 0;
 
       const totalProfit = loadsRes.data?.reduce((sum, l) => 
         sum + Number(l.profit || 0), 0
       ) || 0;
 
+      // Calculate cash balances by method
+      const cashBalance = getCashBalanceByMethod(
+        transactionsRes.data || [],
+        expensesRes.data || [],
+        'cash'
+      );
+      const upiBalance = getCashBalanceByMethod(
+        transactionsRes.data || [],
+        expensesRes.data || [],
+        'upi'
+      );
+      const bankBalance = getCashBalanceByMethod(
+        transactionsRes.data || [],
+        expensesRes.data || [],
+        'bank_transfer'
+      );
+
       setStats({
         totalTrucks: trucksRes.count || 0,
         activeTrucks,
+        assignedTrucks,
         totalLoads: loadsRes.count || 0,
         activeLoads,
         totalRevenue,
         totalProfit,
         pendingTransactions: loadsRes.data?.filter((l) => l.status === "pending").length || 0,
+        cashBalance,
+        upiBalance,
+        bankBalance,
       });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -129,7 +164,7 @@ const Dashboard = () => {
           title="Total Trucks"
           value={stats?.totalTrucks || 0}
           icon={Truck}
-          subtitle={`${stats?.activeTrucks || 0} active`}
+          subtitle={`${stats?.activeTrucks || 0} active • ${stats?.assignedTrucks || 0} assigned`}
         />
         <StatCard
           title="Total Loads"
@@ -161,6 +196,13 @@ const Dashboard = () => {
           subtitle="Loads in transit"
         />
       </div>
+
+      {/* Cash Flow by Payment Method */}
+      <CashFlowByMethod
+        cashBalance={stats?.cashBalance || 0}
+        upiBalance={stats?.upiBalance || 0}
+        bankBalance={stats?.bankBalance || 0}
+      />
 
       <Card>
         <CardHeader>
