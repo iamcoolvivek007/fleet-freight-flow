@@ -21,6 +21,8 @@ import {
 import { TransactionFormDialog } from "./TransactionFormDialog";
 import { ExpenseFormDialog } from "./ExpenseFormDialog";
 import { ChargeFormDialog } from "./ChargeFormDialog";
+import { PartialPaymentTracker } from "./PartialPaymentTracker";
+import { getPartialPaymentProgress } from "@/lib/financialCalculations";
 
 interface Transaction {
   id: string;
@@ -284,20 +286,21 @@ export const TransactionWorkflowDialog = ({
     if (stepKey === "delivered") return ["delivered", "completed"].includes(load.status);
     if (stepKey === "completed") return load.status === "completed";
     
-    if (stepKey === "advance_from_provider") {
-      return transactions.some((t) => t.transaction_type === "advance_from_provider");
+    // For payment transaction types, check if 100% paid
+    if (stepKey === "advance_from_provider" || stepKey === "balance_from_provider") {
+      const targetAmount = load.provider_freight || 0;
+      const progress = getPartialPaymentProgress(transactions, stepKey, targetAmount);
+      return progress.percentage >= 100;
     }
-    if (stepKey === "advance_to_driver") {
-      return transactions.some((t) => t.transaction_type === "advance_to_driver");
-    }
-    if (stepKey === "balance_from_provider") {
-      return transactions.some((t) => t.transaction_type === "balance_from_provider");
-    }
-    if (stepKey === "balance_to_driver") {
-      return transactions.some((t) => t.transaction_type === "balance_to_driver");
+    if (stepKey === "advance_to_driver" || stepKey === "balance_to_driver") {
+      const targetAmount = load.truck_freight || 0;
+      const progress = getPartialPaymentProgress(transactions, stepKey, targetAmount);
+      return progress.percentage >= 100;
     }
     if (stepKey === "commission") {
-      return transactions.some((t) => t.transaction_type === "commission");
+      const targetAmount = assignment?.commission_amount || 0;
+      const progress = getPartialPaymentProgress(transactions, stepKey, targetAmount);
+      return progress.percentage >= 100;
     }
     if (stepKey === "expenses") {
       return expenses.length > 0;
@@ -310,11 +313,23 @@ export const TransactionWorkflowDialog = ({
   };
 
   const calculateProgress = () => {
-    const completedSteps = WORKFLOW_STEPS.filter((step) => getStepStatus(step.key)).length;
-    return (completedSteps / WORKFLOW_STEPS.length) * 100;
+    const activeSteps = load.payment_model === 'commission_only' 
+      ? WORKFLOW_STEPS.filter(step => 
+          !['advance_from_provider', 'balance_from_provider', 'advance_to_driver', 'balance_to_driver'].includes(step.key)
+        )
+      : WORKFLOW_STEPS;
+    const completedSteps = activeSteps.filter((step) => getStepStatus(step.key)).length;
+    return (completedSteps / activeSteps.length) * 100;
   };
 
   const financials = calculateFinancials();
+  
+  // Filter workflow steps based on payment model
+  const activeSteps = load.payment_model === 'commission_only' 
+    ? WORKFLOW_STEPS.filter(step => 
+        !['advance_from_provider', 'balance_from_provider', 'advance_to_driver', 'balance_to_driver'].includes(step.key)
+      )
+    : WORKFLOW_STEPS;
 
   if (!assignment) {
     return (
@@ -336,7 +351,12 @@ export const TransactionWorkflowDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Katha Management - Full Transaction Workflow</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Katha Management - Full Transaction Workflow</DialogTitle>
+              <Badge variant={load.payment_model === 'commission_only' ? 'secondary' : 'default'}>
+                {load.payment_model === 'commission_only' ? 'Commission-Only Model' : 'Standard Payment Model'}
+              </Badge>
+            </div>
           </DialogHeader>
 
           {/* Financial Overview */}
@@ -345,32 +365,55 @@ export const TransactionWorkflowDialog = ({
               <CardTitle className="text-lg">Financial Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Provider Freight</p>
-                  <p className="text-xl font-bold text-success">
-                    ₹{financials.providerFreight.toLocaleString()}
-                  </p>
+              {load.payment_model === 'commission_only' ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Commission</p>
+                    <p className="text-xl font-bold text-purple-500">
+                      ₹{financials.commission.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Expenses</p>
+                    <p className="text-xl font-bold text-warning">
+                      ₹{financials.totalExpenses.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Net Profit</p>
+                    <p className={`text-xl font-bold ${financials.netProfit >= 0 ? "text-success" : "text-destructive"}`}>
+                      ₹{financials.netProfit.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Truck Freight</p>
-                  <p className="text-xl font-bold text-blue-500">
-                    ₹{financials.truckFreight.toLocaleString()}
-                  </p>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Provider Freight</p>
+                    <p className="text-xl font-bold text-success">
+                      ₹{financials.providerFreight.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Truck Freight</p>
+                    <p className="text-xl font-bold text-blue-500">
+                      ₹{financials.truckFreight.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Base Profit</p>
+                    <p className="text-xl font-bold text-primary">
+                      ₹{financials.baseProfit.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Commission</p>
+                    <p className="text-xl font-bold text-purple-500">
+                      ₹{financials.commission.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Base Profit</p>
-                  <p className="text-xl font-bold text-primary">
-                    ₹{financials.baseProfit.toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Commission</p>
-                  <p className="text-xl font-bold text-purple-500">
-                    ₹{financials.commission.toLocaleString()}
-                  </p>
-                </div>
-              </div>
+              )}
               
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
@@ -484,7 +527,7 @@ export const TransactionWorkflowDialog = ({
 
           {/* Workflow Steps */}
           <div className="space-y-3">
-            {WORKFLOW_STEPS.map((step) => {
+            {activeSteps.map((step) => {
               const isComplete = getStepStatus(step.key);
               const Icon = step.icon;
               const stepTransactions = transactions.filter(
@@ -492,6 +535,23 @@ export const TransactionWorkflowDialog = ({
               );
               const stepExpenses = step.key === "expenses" ? expenses : [];
               const stepCharges = step.key === "charges" ? charges : [];
+              
+              // Check if this is a payment transaction step
+              const isPaymentStep = ['advance_from_provider', 'balance_from_provider', 'advance_to_driver', 'balance_to_driver', 'commission'].includes(step.key);
+              
+              // Calculate payment progress for payment steps
+              let targetAmount = 0;
+              let paymentProgress = null;
+              if (isPaymentStep) {
+                if (step.key.includes('from_provider')) {
+                  targetAmount = load.provider_freight || 0;
+                } else if (step.key.includes('to_driver')) {
+                  targetAmount = load.truck_freight || 0;
+                } else if (step.key === 'commission') {
+                  targetAmount = assignment?.commission_amount || 0;
+                }
+                paymentProgress = getPartialPaymentProgress(transactions, step.key, targetAmount);
+              }
 
               return (
                 <Card key={step.key} className={isComplete ? "border-success/30" : ""}>
@@ -507,34 +567,7 @@ export const TransactionWorkflowDialog = ({
                         )}
                       </div>
                       
-                      {!isComplete && step.key.includes("from_provider") && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddTransaction(step.key)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      )}
-                      {!isComplete && step.key.includes("to_driver") && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddTransaction(step.key)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      )}
-                      {!isComplete && step.key === "commission" && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleAddTransaction(step.key)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      )}
-                      {!isComplete && step.key === "expenses" && (
+                      {step.key === "expenses" && (
                         <Button
                           size="sm"
                           onClick={() => setAddExpenseOpen(true)}
@@ -543,7 +576,7 @@ export const TransactionWorkflowDialog = ({
                           Add Expense
                         </Button>
                       )}
-                      {!isComplete && step.key === "charges" && (
+                      {step.key === "charges" && (
                         <Button
                           size="sm"
                           onClick={() => setAddChargeOpen(true)}
@@ -571,51 +604,53 @@ export const TransactionWorkflowDialog = ({
                     </div>
                   </CardHeader>
                   
-                  {(stepTransactions.length > 0 || stepExpenses.length > 0 || stepCharges.length > 0) && (
-                    <CardContent className="py-2">
-                      {stepTransactions.map((transaction) => (
-                        <div
-                          key={transaction.id}
-                          className="flex justify-between items-center py-2 px-3 bg-muted/50 rounded mb-2"
-                        >
-                          <div>
-                            <p className="font-medium">₹{parseFloat(transaction.amount?.toString()).toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(transaction.transaction_date).toLocaleDateString()} • {transaction.payment_method}
-                            </p>
+                  <CardContent className="py-2">
+                    {isPaymentStep && paymentProgress ? (
+                      <PartialPaymentTracker
+                        title={step.label}
+                        payments={stepTransactions.map(t => ({
+                          id: t.id,
+                          amount: t.amount,
+                          payment_method: t.payment_method,
+                          transaction_date: t.transaction_date
+                        }))}
+                        totalPaid={paymentProgress.totalPaid}
+                        targetAmount={targetAmount}
+                        percentage={paymentProgress.percentage}
+                        onAddPayment={() => handleAddTransaction(step.key)}
+                      />
+                    ) : (
+                      <>
+                        {stepExpenses.map((expense) => (
+                          <div
+                            key={expense.id}
+                            className="flex justify-between items-center py-2 px-3 bg-warning/10 rounded mb-2"
+                          >
+                            <div>
+                              <p className="font-medium">{expense.expense_type.replace("_", " ").toUpperCase()}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(expense.payment_date).toLocaleDateString()} • ₹{parseFloat(expense.amount?.toString()).toLocaleString()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      
-                      {stepExpenses.map((expense) => (
-                        <div
-                          key={expense.id}
-                          className="flex justify-between items-center py-2 px-3 bg-warning/10 rounded mb-2"
-                        >
-                          <div>
-                            <p className="font-medium">{expense.expense_type.replace("_", " ").toUpperCase()}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(expense.payment_date).toLocaleDateString()} • ₹{parseFloat(expense.amount?.toString()).toLocaleString()}
-                            </p>
+                        ))}
+                        
+                        {stepCharges.map((charge) => (
+                          <div
+                            key={charge.id}
+                            className="flex justify-between items-center py-2 px-3 bg-amber-500/10 rounded mb-2"
+                          >
+                            <div>
+                              <p className="font-medium">{charge.charge_type.replace("_", " ").toUpperCase()}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Charged to {charge.charged_to} • ₹{parseFloat(charge.amount?.toString()).toLocaleString()} • {charge.status}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      
-                      {stepCharges.map((charge) => (
-                        <div
-                          key={charge.id}
-                          className="flex justify-between items-center py-2 px-3 bg-amber-500/10 rounded mb-2"
-                        >
-                          <div>
-                            <p className="font-medium">{charge.charge_type.replace("_", " ").toUpperCase()}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Charged to {charge.charged_to} • ₹{parseFloat(charge.amount?.toString()).toLocaleString()} • {charge.status}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </CardContent>
-                  )}
+                        ))}
+                      </>
+                    )}
+                  </CardContent>
                 </Card>
               );
             })}
