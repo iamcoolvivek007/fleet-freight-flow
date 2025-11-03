@@ -223,7 +223,6 @@ export const TransactionWorkflowDialog = ({
   const calculateFinancials = () => {
     const providerFreight = parseFloat(load.provider_freight?.toString() || "0");
     const truckFreight = parseFloat(load.truck_freight?.toString() || "0");
-    const baseProfit = providerFreight - truckFreight;
     const commission = parseFloat(assignment?.commission_amount?.toString() || "0");
     
     const totalExpenses = expenses.reduce(
@@ -255,19 +254,70 @@ export const TransactionWorkflowDialog = ({
       .filter((t) => t.transaction_type === "balance_to_driver")
       .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
 
-    const totalReceived = advanceFromProvider + balanceFromProvider + partyCharges;
+    const commissionReceived = transactions
+      .filter((t) => t.transaction_type === "commission")
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+
+    // CORRECTED CALCULATIONS
+    // Total received = all money coming in
+    const totalReceived = advanceFromProvider + balanceFromProvider + commissionReceived + partyCharges;
+    
+    // Total paid = all money going out
     const totalPaid = advanceToDriver + balanceToDriver + totalExpenses + supplierCharges;
     
-    const balanceToReceive = providerFreight + partyCharges - totalReceived;
-    const balanceToPay = truckFreight + supplierCharges - (advanceToDriver + balanceToDriver);
+    // Balance to receive = Only freight obligations minus what we already received
+    const balanceToReceive = providerFreight - (advanceFromProvider + balanceFromProvider);
+    
+    // Balance to pay = Only truck freight obligations minus what we already paid
+    const balanceToPay = truckFreight - (advanceToDriver + balanceToDriver);
+    
+    // Cash in hand = Simply inflows minus outflows
     const cashInHand = totalReceived - totalPaid;
-    const netProfit = baseProfit + commission - totalExpenses + partyCharges - supplierCharges;
+
+    // Calculate method-wise balances
+    const cashInflows = transactions
+      .filter(t => t.payment_method === 'cash' && ['advance_from_provider', 'balance_from_provider', 'commission'].includes(t.transaction_type))
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+    
+    const cashOutflows = [
+      ...transactions.filter(t => t.payment_method === 'cash' && ['advance_to_driver', 'balance_to_driver'].includes(t.transaction_type)),
+      ...expenses.filter(e => e.payment_method === 'cash')
+    ].reduce((sum, item) => sum + parseFloat(item.amount?.toString() || "0"), 0);
+
+    const upiInflows = transactions
+      .filter(t => t.payment_method === 'upi' && ['advance_from_provider', 'balance_from_provider', 'commission'].includes(t.transaction_type))
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+    
+    const upiOutflows = [
+      ...transactions.filter(t => t.payment_method === 'upi' && ['advance_to_driver', 'balance_to_driver'].includes(t.transaction_type)),
+      ...expenses.filter(e => e.payment_method === 'upi')
+    ].reduce((sum, item) => sum + parseFloat(item.amount?.toString() || "0"), 0);
+
+    const bankInflows = transactions
+      .filter(t => t.payment_method === 'bank_transfer' && ['advance_from_provider', 'balance_from_provider', 'commission'].includes(t.transaction_type))
+      .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+    
+    const bankOutflows = [
+      ...transactions.filter(t => t.payment_method === 'bank_transfer' && ['advance_to_driver', 'balance_to_driver'].includes(t.transaction_type)),
+      ...expenses.filter(e => e.payment_method === 'bank_transfer')
+    ].reduce((sum, item) => sum + parseFloat(item.amount?.toString() || "0"), 0);
+    
+    // Net profit calculation
+    let baseProfit = 0;
+    if (load.payment_model === 'commission_only') {
+      // Commission-only: profit = commission - expenses - supplier charges
+      baseProfit = commission - totalExpenses - supplierCharges + partyCharges;
+    } else {
+      // Standard: profit = (provider - truck) + commission + party charges - expenses - supplier charges
+      baseProfit = (providerFreight - truckFreight) + commission + partyCharges - totalExpenses - supplierCharges;
+    }
 
     return {
       providerFreight,
       truckFreight,
       baseProfit,
       commission,
+      commissionReceived,
       totalExpenses,
       partyCharges,
       supplierCharges,
@@ -276,7 +326,14 @@ export const TransactionWorkflowDialog = ({
       balanceToReceive,
       balanceToPay,
       cashInHand,
-      netProfit,
+      netProfit: baseProfit,
+      cashBalance: cashInflows - cashOutflows,
+      upiBalance: upiInflows - upiOutflows,
+      bankBalance: bankInflows - bankOutflows,
+      advanceFromProvider,
+      balanceFromProvider,
+      advanceToDriver,
+      balanceToDriver,
     };
   };
 
@@ -500,17 +557,36 @@ export const TransactionWorkflowDialog = ({
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-primary" />
-                  Cash in Hand
+                  Cash Balances by Method
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-4">
-                  <p className={`text-3xl font-bold ${financials.cashInHand >= 0 ? "text-success" : "text-destructive"}`}>
-                    ₹{financials.cashInHand.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Running Balance
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Cash in Hand</span>
+                    <span className={`font-bold ${financials.cashBalance >= 0 ? "text-success" : "text-destructive"}`}>
+                      ₹{financials.cashBalance.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">UPI Balance</span>
+                    <span className={`font-bold ${financials.upiBalance >= 0 ? "text-primary" : "text-destructive"}`}>
+                      ₹{financials.upiBalance.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Bank Balance</span>
+                    <span className={`font-bold ${financials.bankBalance >= 0 ? "text-blue-600" : "text-destructive"}`}>
+                      ₹{financials.bankBalance.toLocaleString()}
+                    </span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="font-medium">Total Cash</span>
+                    <span className={`text-xl font-bold ${financials.cashInHand >= 0 ? "text-success" : "text-destructive"}`}>
+                      ₹{financials.cashInHand.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

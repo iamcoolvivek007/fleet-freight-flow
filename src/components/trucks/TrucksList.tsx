@@ -1,9 +1,27 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Truck } from "@/pages/Trucks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Phone, User, Truck as TruckIcon } from "lucide-react";
+import { Edit, Phone, User, Truck as TruckIcon, History, ChevronDown, MapPin } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+interface LoadHistory {
+  id: string;
+  load_id: string;
+  assigned_at: string;
+  load: {
+    id: string;
+    loading_location: string;
+    unloading_location: string;
+    status: string;
+    provider_freight: number;
+    truck_freight: number;
+    created_at: string;
+  };
+}
 
 interface TrucksListProps {
   trucks: Truck[];
@@ -13,6 +31,60 @@ interface TrucksListProps {
 }
 
 export const TrucksList = ({ trucks, loading, onEdit }: TrucksListProps) => {
+  const [loadHistory, setLoadHistory] = useState<Record<string, LoadHistory[]>>({});
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    if (trucks.length > 0) {
+      fetchLoadHistory();
+    }
+  }, [trucks]);
+
+  const fetchLoadHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const truckIds = trucks.map(t => t.id);
+      
+      const { data, error } = await supabase
+        .from("load_assignments")
+        .select(`
+          *,
+          loads!inner(
+            id,
+            loading_location,
+            unloading_location,
+            status,
+            provider_freight,
+            truck_freight,
+            created_at
+          )
+        `)
+        .in("truck_id", truckIds)
+        .order("assigned_at", { ascending: false });
+
+      if (error) throw error;
+
+      const historyMap: Record<string, LoadHistory[]> = {};
+      data?.forEach((assignment) => {
+        if (!historyMap[assignment.truck_id]) {
+          historyMap[assignment.truck_id] = [];
+        }
+        historyMap[assignment.truck_id].push({
+          id: assignment.id,
+          load_id: assignment.load_id,
+          assigned_at: assignment.assigned_at,
+          load: assignment.loads,
+        });
+      });
+
+      setLoadHistory(historyMap);
+    } catch (error) {
+      console.error("Error fetching load history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -128,6 +200,50 @@ export const TrucksList = ({ trucks, loading, onEdit }: TrucksListProps) => {
                     <span className="ml-1 font-medium">{truck.carrying_capacity} tons</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {loadHistory[truck.id] && loadHistory[truck.id].length > 0 && (
+              <Collapsible className="space-y-2 pt-3 border-t">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between">
+                    <span className="flex items-center">
+                      <History className="mr-2 h-4 w-4" />
+                      Load History ({loadHistory[truck.id].length})
+                    </span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2">
+                  {loadHistory[truck.id].map((history) => (
+                    <div key={history.id} className="p-2 border rounded-md text-sm space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-xs text-muted-foreground">
+                          Load #{history.load_id.substring(0, 8)}
+                        </span>
+                        <Badge variant={history.load.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                          {history.load.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <MapPin className="mr-1 h-3 w-3" />
+                        {history.load.loading_location} → {history.load.unloading_location}
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span>Freight: ₹{history.load.truck_freight?.toLocaleString()}</span>
+                        <span className="text-muted-foreground">
+                          {new Date(history.assigned_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {(!loadHistory[truck.id] || loadHistory[truck.id].length === 0) && !loadingHistory && (
+              <div className="text-xs text-center text-muted-foreground py-2 border-t rounded-md mt-3">
+                No loads assigned yet
               </div>
             )}
 

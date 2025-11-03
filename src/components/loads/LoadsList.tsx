@@ -10,6 +10,19 @@ import { LoadProvider } from "@/pages/LoadProviders";
 import { AssignTruckDialog } from "./AssignTruckDialog";
 import { TransactionWorkflowDialog } from "./TransactionWorkflowDialog";
 
+interface LoadAssignment {
+  id: string;
+  truck_id: string;
+  load_id: string;
+  assigned_at: string;
+  commission_percentage: number;
+  commission_amount: number;
+}
+
+interface TruckInfo {
+  truck_number: string;
+}
+
 interface LoadsListProps {
   loads: Load[];
   loading: boolean;
@@ -19,12 +32,14 @@ interface LoadsListProps {
 
 export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps) => {
   const [providers, setProviders] = useState<Record<string, LoadProvider>>({});
+  const [assignments, setAssignments] = useState<Record<string, { assignment: LoadAssignment; truck: TruckInfo }>>({});
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState<Load | null>(null);
 
   useEffect(() => {
     fetchProviders();
+    fetchAssignments();
   }, [loads]);
 
   const fetchProviders = async () => {
@@ -46,6 +61,34 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
       setProviders(providersMap);
     } catch (error) {
       console.error("Error fetching providers:", error);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    try {
+      const loadIds = loads.map(l => l.id);
+      if (loadIds.length === 0) return;
+
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from("load_assignments")
+        .select(`
+          *,
+          trucks!inner(truck_number)
+        `)
+        .in("load_id", loadIds);
+
+      if (assignmentError) throw assignmentError;
+
+      const assignmentsMap: Record<string, any> = {};
+      assignmentData?.forEach((a) => {
+        assignmentsMap[a.load_id] = {
+          assignment: a,
+          truck: a.trucks,
+        };
+      });
+      setAssignments(assignmentsMap);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
     }
   };
 
@@ -120,6 +163,17 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
                   {getStatusLabel(load.status)}
                 </Badge>
               </div>
+              {assignments[load.id] && (
+                <div className="flex items-center gap-2 mt-2 p-2 bg-muted/50 rounded-md">
+                  <Truck className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    Truck: {assignments[load.id].truck.truck_number}
+                  </span>
+                  <Badge variant="outline" className="text-xs">
+                    Assigned {new Date(assignments[load.id].assignment.assigned_at).toLocaleDateString()}
+                  </Badge>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">

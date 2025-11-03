@@ -5,9 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, DollarSign, Package, Download, FileText, Users, Truck } from "lucide-react";
+import { TrendingUp, DollarSign, Package, Download, FileText, Users, Truck, Calendar } from "lucide-react";
 import { PartyBalanceSheet } from "@/components/reports/PartyBalanceSheet";
 import { DriverBalanceSheet } from "@/components/reports/DriverBalanceSheet";
+import { DailyLoadReport } from "@/components/reports/DailyLoadReport";
 import { toast } from "sonner";
 
 interface ReportData {
@@ -209,6 +210,10 @@ const Reports = () => {
             <FileText className="h-4 w-4 mr-2" />
             Overview
           </TabsTrigger>
+          <TabsTrigger value="daily">
+            <Calendar className="h-4 w-4 mr-2" />
+            Daily Report
+          </TabsTrigger>
           <TabsTrigger value="party">
             <Users className="h-4 w-4 mr-2" />
             Party Balance
@@ -325,6 +330,10 @@ const Reports = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="daily">
+          <DailyLoadReport />
         </TabsContent>
 
         <TabsContent value="party">
