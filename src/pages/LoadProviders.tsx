@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { LoadProviderForm } from "@/components/load-providers/LoadProviderForm";
 import { LoadProvidersList } from "@/components/load-providers/LoadProvidersList";
+import { ProviderDetailDialog } from "@/components/load-providers/ProviderDetailDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export interface LoadProvider {
@@ -21,6 +22,8 @@ const LoadProviders = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<LoadProvider | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<LoadProvider | null>(null);
 
   useEffect(() => {
     fetchProviders();
@@ -49,6 +52,11 @@ const LoadProviders = () => {
   const handleEdit = (provider: LoadProvider) => {
     setEditingProvider(provider);
     setDialogOpen(true);
+  };
+
+  const handleViewDetails = (provider: LoadProvider) => {
+    setSelectedProvider(provider);
+    setDetailDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
@@ -80,6 +88,7 @@ const LoadProviders = () => {
         providers={providers} 
         loading={loading} 
         onEdit={handleEdit}
+        onViewDetails={handleViewDetails}
         onRefresh={fetchProviders}
       />
 
@@ -97,6 +106,12 @@ const LoadProviders = () => {
           />
         </DialogContent>
       </Dialog>
+
+      <ProviderDetailDialog
+        provider={selectedProvider}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
     </div>
   );
 };

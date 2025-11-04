@@ -2,17 +2,18 @@ import { LoadProvider } from "@/pages/LoadProviders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Phone, Mail, MapPin, User } from "lucide-react";
+import { Edit, Phone, Mail, MapPin, User, Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface LoadProvidersListProps {
   providers: LoadProvider[];
   loading: boolean;
   onEdit: (provider: LoadProvider) => void;
+  onViewDetails: (provider: LoadProvider) => void;
   onRefresh: () => void;
 }
 
-export const LoadProvidersList = ({ providers, loading, onEdit }: LoadProvidersListProps) => {
+export const LoadProvidersList = ({ providers, loading, onEdit, onViewDetails }: LoadProvidersListProps) => {
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -73,15 +74,24 @@ export const LoadProvidersList = ({ providers, loading, onEdit }: LoadProvidersL
               </div>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-4"
-              onClick={() => onEdit(provider)}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onViewDetails(provider)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(provider)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ))}

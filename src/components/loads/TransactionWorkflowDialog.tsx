@@ -343,17 +343,40 @@ export const TransactionWorkflowDialog = ({
     if (stepKey === "delivered") return ["delivered", "completed"].includes(load.status);
     if (stepKey === "completed") return load.status === "completed";
     
-    // For payment transaction types, check if 100% paid
-    if (stepKey === "advance_from_provider" || stepKey === "balance_from_provider") {
+    // For advance payment steps, check if 100% of advance is paid
+    if (stepKey === "advance_from_provider") {
       const targetAmount = load.provider_freight || 0;
       const progress = getPartialPaymentProgress(transactions, stepKey, targetAmount);
       return progress.percentage >= 100;
     }
-    if (stepKey === "advance_to_driver" || stepKey === "balance_to_driver") {
+    if (stepKey === "advance_to_driver") {
       const targetAmount = load.truck_freight || 0;
       const progress = getPartialPaymentProgress(transactions, stepKey, targetAmount);
       return progress.percentage >= 100;
     }
+    
+    // For balance steps, check if remaining amount after advance is fully paid
+    if (stepKey === "balance_from_provider") {
+      const advancePaid = transactions
+        .filter(t => t.transaction_type === 'advance_from_provider')
+        .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+      const balancePaid = transactions
+        .filter(t => t.transaction_type === 'balance_from_provider')
+        .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+      const remaining = (load.provider_freight || 0) - advancePaid;
+      return remaining <= 0 || balancePaid >= remaining;
+    }
+    if (stepKey === "balance_to_driver") {
+      const advancePaid = transactions
+        .filter(t => t.transaction_type === 'advance_to_driver')
+        .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+      const balancePaid = transactions
+        .filter(t => t.transaction_type === 'balance_to_driver')
+        .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+      const remaining = (load.truck_freight || 0) - advancePaid;
+      return remaining <= 0 || balancePaid >= remaining;
+    }
+    
     if (stepKey === "commission") {
       const targetAmount = assignment?.commission_amount || 0;
       const progress = getPartialPaymentProgress(transactions, stepKey, targetAmount);
@@ -615,14 +638,28 @@ export const TransactionWorkflowDialog = ({
               // Check if this is a payment transaction step
               const isPaymentStep = ['advance_from_provider', 'balance_from_provider', 'advance_to_driver', 'balance_to_driver', 'commission'].includes(step.key);
               
-              // Calculate payment progress for payment steps
+              // Calculate payment progress for payment steps with CORRECT target amounts
               let targetAmount = 0;
               let paymentProgress = null;
               if (isPaymentStep) {
-                if (step.key.includes('from_provider')) {
+                if (step.key === 'advance_from_provider') {
+                  // Advance target = full provider freight
                   targetAmount = load.provider_freight || 0;
-                } else if (step.key.includes('to_driver')) {
+                } else if (step.key === 'balance_from_provider') {
+                  // Balance target = provider freight - advance already paid
+                  const advancePaid = transactions
+                    .filter(t => t.transaction_type === 'advance_from_provider')
+                    .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+                  targetAmount = Math.max(0, (load.provider_freight || 0) - advancePaid);
+                } else if (step.key === 'advance_to_driver') {
+                  // Advance target = full truck freight
                   targetAmount = load.truck_freight || 0;
+                } else if (step.key === 'balance_to_driver') {
+                  // Balance target = truck freight - advance already paid
+                  const advancePaid = transactions
+                    .filter(t => t.transaction_type === 'advance_to_driver')
+                    .reduce((sum, t) => sum + parseFloat(t.amount?.toString() || "0"), 0);
+                  targetAmount = Math.max(0, (load.truck_freight || 0) - advancePaid);
                 } else if (step.key === 'commission') {
                   targetAmount = assignment?.commission_amount || 0;
                 }
