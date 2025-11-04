@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, Package, DollarSign, TrendingUp, Clock, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CashFlowByMethod } from "@/components/dashboard/CashFlowByMethod";
+import { TopProvidersWidget } from "@/components/dashboard/TopProvidersWidget";
 import { getCashBalanceByMethod } from "@/lib/financialCalculations";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -203,6 +204,9 @@ const Dashboard = () => {
         upiBalance={stats?.upiBalance || 0}
         bankBalance={stats?.bankBalance || 0}
       />
+
+      {/* Top Providers with Outstanding Balance */}
+      <TopProvidersWidget />
 
       <Card>
         <CardHeader>
