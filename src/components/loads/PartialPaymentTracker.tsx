@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Payment {
@@ -19,6 +19,9 @@ interface PartialPaymentTrackerProps {
   targetAmount: number;
   percentage: number;
   onAddPayment: () => void;
+  onEditPayment?: (payment: Payment) => void;
+  onDeletePayment?: (paymentId: string) => void;
+  allowEdit?: boolean;
 }
 
 export const PartialPaymentTracker = ({
@@ -28,6 +31,9 @@ export const PartialPaymentTracker = ({
   targetAmount,
   percentage,
   onAddPayment,
+  onEditPayment,
+  onDeletePayment,
+  allowEdit = true,
 }: PartialPaymentTrackerProps) => {
   const remaining = targetAmount - totalPaid;
   const isComplete = percentage >= 100;
@@ -61,15 +67,37 @@ export const PartialPaymentTracker = ({
           {payments.map((payment) => (
             <div
               key={payment.id}
-              className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded"
+              className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded hover:bg-muted group"
             >
               <div>
                 <span className="font-medium">₹{payment.amount.toLocaleString()}</span>
                 <span className="text-muted-foreground ml-2">via {payment.payment_method}</span>
               </div>
-              <span className="text-muted-foreground text-xs">
-                {format(new Date(payment.transaction_date), 'dd MMM yyyy')}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">
+                  {format(new Date(payment.transaction_date), 'dd MMM yyyy')}
+                </span>
+                {allowEdit && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => onEditPayment?.(payment)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      onClick={() => onDeletePayment?.(payment.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

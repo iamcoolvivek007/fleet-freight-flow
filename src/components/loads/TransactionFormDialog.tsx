@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
+interface Transaction {
+  id: string;
+  amount: number;
+  transaction_type: string;
+  payment_method: string;
+  transaction_date: string;
+  payment_details?: string;
+  notes?: string;
+}
+
 interface TransactionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   loadAssignmentId: string;
   transactionType: string;
   onSuccess: () => void;
+  transaction?: Transaction | null;
+  mode?: 'create' | 'edit';
 }
 
 const TRANSACTION_LABELS: Record<string, string> = {
@@ -30,6 +42,8 @@ export const TransactionFormDialog = ({
   loadAssignmentId,
   transactionType,
   onSuccess,
+  transaction = null,
+  mode = 'create',
 }: TransactionFormDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -40,6 +54,26 @@ export const TransactionFormDialog = ({
     transaction_date: new Date().toISOString().split("T")[0],
   });
 
+  useEffect(() => {
+    if (transaction && mode === 'edit') {
+      setFormData({
+        amount: transaction.amount.toString(),
+        payment_method: transaction.payment_method,
+        payment_details: transaction.payment_details || "",
+        notes: transaction.notes || "",
+        transaction_date: new Date(transaction.transaction_date).toISOString().split("T")[0],
+      });
+    } else {
+      setFormData({
+        amount: "",
+        payment_method: "",
+        payment_details: "",
+        notes: "",
+        transaction_date: new Date().toISOString().split("T")[0],
+      });
+    }
+  }, [transaction, mode, open]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -48,30 +82,39 @@ export const TransactionFormDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("transactions").insert({
-        load_assignment_id: loadAssignmentId,
-        transaction_type: transactionType as any,
+      const transactionData = {
         amount: parseFloat(formData.amount),
         payment_method: formData.payment_method as any,
         payment_details: formData.payment_details || null,
         notes: formData.notes || null,
         transaction_date: new Date(formData.transaction_date).toISOString(),
-        user_id: user.id,
-      });
+      };
 
-      if (error) throw error;
+      if (mode === 'edit' && transaction) {
+        const { error } = await supabase
+          .from("transactions")
+          .update(transactionData)
+          .eq('id', transaction.id)
+          .eq('user_id', user.id);
 
-      toast.success("Transaction added successfully");
+        if (error) throw error;
+        toast.success("Transaction updated successfully");
+      } else {
+        const { error } = await supabase.from("transactions").insert({
+          ...transactionData,
+          load_assignment_id: loadAssignmentId,
+          transaction_type: transactionType as any,
+          user_id: user.id,
+        });
+
+        if (error) throw error;
+        toast.success("Transaction added successfully");
+      }
+
       onSuccess();
-      setFormData({
-        amount: "",
-        payment_method: "",
-        payment_details: "",
-        notes: "",
-        transaction_date: new Date().toISOString().split("T")[0],
-      });
+      onOpenChange(false);
     } catch (error: any) {
-      toast.error(error.message || "Failed to add transaction");
+      toast.error(error.message || `Failed to ${mode} transaction`);
     } finally {
       setLoading(false);
     }
@@ -81,7 +124,9 @@ export const TransactionFormDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add {TRANSACTION_LABELS[transactionType]}</DialogTitle>
+          <DialogTitle>
+            {mode === 'edit' ? 'Edit' : 'Add'} {TRANSACTION_LABELS[transactionType]}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -152,7 +197,9 @@ export const TransactionFormDialog = ({
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Adding..." : "Add Transaction"}
+              {loading 
+                ? `${mode === 'edit' ? 'Updating' : 'Adding'}...` 
+                : `${mode === 'edit' ? 'Update' : 'Add'} Transaction`}
             </Button>
           </div>
         </form>

@@ -3,21 +3,42 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
+import {
   ArrowDownToLine, 
   ArrowUpFromLine, 
   Wallet, 
   Receipt,
   DollarSign,
   Download,
-  Filter
+  Filter,
+  MoreVertical,
+  Pencil,
+  Trash2
 } from "lucide-react";
 import { SearchBar } from "@/components/common/SearchBar";
 import { DateRangePicker } from "@/components/common/DateRangePicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DateRange } from "react-day-picker";
 import { format, isWithinInterval } from "date-fns";
+import { TransactionFormDialog } from "@/components/loads/TransactionFormDialog";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -82,6 +103,10 @@ const Transactions = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<CombinedTransaction | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<CombinedTransaction | null>(null);
 
   useEffect(() => {
     fetchAllTransactions();
@@ -248,6 +273,46 @@ const Transactions = () => {
 
   const formatTransactionType = (type: string) => {
     return type.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  };
+
+  const handleEdit = (transaction: CombinedTransaction) => {
+    if (transaction.category !== 'transaction') {
+      toast.error('Only transactions can be edited from this page');
+      return;
+    }
+    setSelectedTransaction(transaction);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (transaction: CombinedTransaction) => {
+    setTransactionToDelete(transaction);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
+    
+    try {
+      const table = transactionToDelete.category === 'transaction' 
+        ? 'transactions' 
+        : transactionToDelete.category === 'expense' 
+        ? 'expenses' 
+        : 'charges';
+      
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq('id', transactionToDelete.id);
+      
+      if (error) throw error;
+      
+      toast.success(`${transactionToDelete.category} deleted successfully`);
+      fetchAllTransactions();
+      setDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete');
+    }
   };
 
   const exportToCSV = () => {
@@ -481,15 +546,81 @@ const Transactions = () => {
                     </div>
                   </div>
                   
-                  <p className={`text-xl font-bold ${getTransactionColor(transaction.type, transaction.category)}`}>
-                    {transaction.type.includes("from_provider") || transaction.type.includes("provider_advance") ? "+" : "-"}
-                    ₹{Number(transaction.amount).toLocaleString()}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className={`text-xl font-bold ${getTransactionColor(transaction.type, transaction.category)}`}>
+                      {transaction.type.includes("from_provider") || transaction.type.includes("provider_advance") ? "+" : "-"}
+                      ₹{Number(transaction.amount).toLocaleString()}
+                    </p>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(transaction)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteClick(transaction)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {transactionToDelete?.category}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the {formatTransactionType(transactionToDelete?.type || '')} 
+              of ₹{transactionToDelete?.amount.toLocaleString()}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Transaction Dialog */}
+      {selectedTransaction && (
+        <TransactionFormDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          loadAssignmentId={(selectedTransaction.load_assignment as any)?.id || ''}
+          transactionType={selectedTransaction.type}
+          transaction={{
+            id: selectedTransaction.id,
+            amount: selectedTransaction.amount,
+            transaction_type: selectedTransaction.type,
+            payment_method: selectedTransaction.payment_method,
+            transaction_date: selectedTransaction.date,
+            payment_details: selectedTransaction.description || '',
+            notes: ''
+          }}
+          mode="edit"
+          onSuccess={() => {
+            fetchAllTransactions();
+            setEditDialogOpen(false);
+          }}
+        />
       )}
     </div>
   );

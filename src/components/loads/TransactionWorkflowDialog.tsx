@@ -5,6 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -106,6 +116,10 @@ export const TransactionWorkflowDialog = ({
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [addChargeOpen, setAddChargeOpen] = useState(false);
   const [selectedTransactionType, setSelectedTransactionType] = useState<string>("");
+  const [editTransactionOpen, setEditTransactionOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -183,6 +197,40 @@ export const TransactionWorkflowDialog = ({
   const handleAddTransaction = (type: string) => {
     setSelectedTransactionType(type);
     setAddTransactionOpen(true);
+  };
+
+  const handleEditTransaction = (payment: { id: string; amount: number; payment_method: string; transaction_date: string }) => {
+    const transaction = transactions.find(t => t.id === payment.id);
+    if (transaction) {
+      setSelectedTransaction(transaction);
+      setEditTransactionOpen(true);
+    }
+  };
+
+  const handleDeleteTransaction = (paymentId: string) => {
+    setTransactionToDelete(paymentId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', transactionToDelete);
+      
+      if (error) throw error;
+      
+      toast.success('Transaction deleted successfully');
+      fetchAssignment();
+      onRefresh();
+      setDeleteConfirmOpen(false);
+      setTransactionToDelete(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete transaction');
+    }
   };
 
   const handleMarkStatus = async (status: "pending" | "assigned" | "in_transit" | "delivered" | "completed") => {
@@ -731,6 +779,9 @@ export const TransactionWorkflowDialog = ({
                         targetAmount={targetAmount}
                         percentage={paymentProgress.percentage}
                         onAddPayment={() => handleAddTransaction(step.key)}
+                        onEditPayment={handleEditTransaction}
+                        onDeletePayment={handleDeleteTransaction}
+                        allowEdit={load.status !== 'completed'}
                       />
                     ) : (
                       <>
@@ -783,6 +834,20 @@ export const TransactionWorkflowDialog = ({
               onRefresh();
             }}
           />
+
+          <TransactionFormDialog
+            open={editTransactionOpen}
+            onOpenChange={setEditTransactionOpen}
+            loadAssignmentId={assignment.id}
+            transactionType={selectedTransaction?.transaction_type || ''}
+            transaction={selectedTransaction}
+            mode="edit"
+            onSuccess={() => {
+              fetchAssignment();
+              onRefresh();
+              setEditTransactionOpen(false);
+            }}
+          />
           
           <ExpenseFormDialog
             open={addExpenseOpen}
@@ -803,6 +868,23 @@ export const TransactionWorkflowDialog = ({
               onRefresh();
             }}
           />
+
+          <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Transaction?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the transaction.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </>
