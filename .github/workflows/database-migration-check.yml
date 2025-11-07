@@ -1,0 +1,50 @@
+name: Database Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  validate-migration:
+    name: Validate SQL Migration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for dangerous operations
+        run: |
+          echo "Checking for dangerous SQL operations..."
+          DANGEROUS_PATTERNS="DROP TABLE|DROP DATABASE|TRUNCATE|ALTER TABLE.*DROP COLUMN"
+          
+          for file in $(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD | grep "supabase/migrations/"); do
+            if grep -qiE "$DANGEROUS_PATTERNS" "$file"; then
+              echo "⚠️  WARNING: Dangerous operation detected in $file"
+              echo "Please review carefully before merging!"
+              grep -niE "$DANGEROUS_PATTERNS" "$file"
+            fi
+          done
+      
+      - name: Validate migration naming
+        run: |
+          echo "Validating migration file names..."
+          for file in $(git diff --name-only ${{ github.event.pull_request.base.sha }} HEAD | grep "supabase/migrations/"); do
+            BASENAME=$(basename "$file")
+            if ! [[ $BASENAME =~ ^[0-9]{14}_.*\.sql$ ]]; then
+              echo "❌ Invalid migration filename: $BASENAME"
+              echo "Expected format: YYYYMMDDHHMMSS_description.sql"
+              exit 1
+            fi
+          done
+          echo "✅ All migration filenames are valid"
+      
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️  **Database migration detected!**\n\nPlease ensure:\n- [ ] Migration has been tested locally\n- [ ] RLS policies are included for new tables\n- [ ] No dangerous DROP operations without backup\n- [ ] Migration is reversible if possible\n\n**Requires manual approval before merge.**'
+            })

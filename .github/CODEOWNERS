@@ -1,0 +1,22 @@
+# FreightFlow Code Owners
+# These owners will be automatically requested for review when someone opens a pull request
+
+# Default owner for everything
+*                                   @your-github-username
+
+# Database migrations require extra scrutiny
+supabase/migrations/                @your-github-username
+
+# Critical business logic
+src/lib/financialCalculations.ts   @your-github-username
+
+# Backend configuration
+supabase/config.toml                @your-github-username
+.env                                @your-github-username
+
+# CI/CD workflows
+.github/workflows/                  @your-github-username
+
+# Documentation
+docs/                               @your-github-username
+*.md                                @your-github-username
