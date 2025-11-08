@@ -1,3 +1,7 @@
+/**
+ * @type Json
+ * @description The Json type.
+ */
 export type Json =
   | string
   | number
@@ -6,6 +10,10 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+/**
+ * @type Database
+ * @description The Database type.
+ */
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)

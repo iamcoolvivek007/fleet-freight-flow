@@ -8,6 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
+/**
+ * @interface Transaction
+ * @description The transaction interface.
+ * @property {string} id - The transaction ID.
+ * @property {number} amount - The transaction amount.
+ * @property {string} transaction_type - The transaction type.
+ * @property {string} payment_method - The payment method.
+ * @property {string} transaction_date - The transaction date.
+ * @property {string} [payment_details] - The payment details.
+ * @property {string} [notes] - The transaction notes.
+ */
 interface Transaction {
   id: string;
   amount: number;
@@ -18,6 +29,17 @@ interface Transaction {
   notes?: string;
 }
 
+/**
+ * @interface TransactionFormDialogProps
+ * @description The props for the TransactionFormDialog component.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ * @property {string} loadAssignmentId - The ID of the load assignment.
+ * @property {string} transactionType - The type of transaction.
+ * @property {() => void} onSuccess - The function to call when the transaction is successfully added or updated.
+ * @property {Transaction | null} [transaction] - The transaction to edit.
+ * @property {'create' | 'edit'} [mode] - The mode of the dialog.
+ */
 interface TransactionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,6 +58,12 @@ const TRANSACTION_LABELS: Record<string, string> = {
   commission: "Commission",
 };
 
+/**
+ * @name TransactionFormDialog
+ * @description A dialog for adding or editing a transaction.
+ * @param {TransactionFormDialogProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const TransactionFormDialog = ({
   open,
   onOpenChange,

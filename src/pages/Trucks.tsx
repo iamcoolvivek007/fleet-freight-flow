@@ -8,6 +8,25 @@ import { TrucksList } from "@/components/trucks/TrucksList";
 import { SearchBar } from "@/components/common/SearchBar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+/**
+ * @interface Truck
+ * @description The truck interface.
+ * @property {string} id - The truck ID.
+ * @property {string} truck_number - The truck number.
+ * @property {string} driver_name - The driver name.
+ * @property {string} driver_phone - The driver phone.
+ * @property {string} owner_name - The owner name.
+ * @property {string} owner_phone - The owner phone.
+ * @property {string | null} [third_party_name] - The third party name.
+ * @property {string | null} [third_party_contact] - The third party contact.
+ * @property {"open" | "container"} truck_type - The truck type.
+ * @property {number} truck_length - The truck length.
+ * @property {number} carrying_capacity - The carrying capacity.
+ * @property {string | null} truck_image_url - The truck image URL.
+ * @property {string | null} driver_image_url - The driver image URL.
+ * @property {boolean} is_active - Whether the truck is active.
+ * @property {string} created_at - The creation date.
+ */
 export interface Truck {
   id: string;
   truck_number: string;
@@ -26,6 +45,11 @@ export interface Truck {
   created_at: string;
 }
 
+/**
+ * @name Trucks
+ * @description The trucks page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Trucks = () => {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [filteredTrucks, setFilteredTrucks] = useState<Truck[]>([]);

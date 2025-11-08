@@ -34,6 +34,17 @@ import { ChargeFormDialog } from "./ChargeFormDialog";
 import { PartialPaymentTracker } from "./PartialPaymentTracker";
 import { getPartialPaymentProgress } from "@/lib/financialCalculations";
 
+/**
+ * @interface Transaction
+ * @description The transaction interface.
+ * @property {string} id - The transaction ID.
+ * @property {number} amount - The transaction amount.
+ * @property {string} transaction_type - The transaction type.
+ * @property {string} payment_method - The payment method.
+ * @property {string} transaction_date - The transaction date.
+ * @property {string} [payment_details] - The payment details.
+ * @property {string} [notes] - The transaction notes.
+ */
 interface Transaction {
   id: string;
   amount: number;
@@ -44,6 +55,17 @@ interface Transaction {
   notes?: string;
 }
 
+/**
+ * @interface Expense
+ * @description The expense interface.
+ * @property {string} id - The expense ID.
+ * @property {string} expense_type - The expense type.
+ * @property {number} amount - The expense amount.
+ * @property {string} payment_method - The payment method.
+ * @property {string} payment_date - The payment date.
+ * @property {string} [description] - The expense description.
+ * @property {string} [receipt_url] - The receipt URL.
+ */
 interface Expense {
   id: string;
   expense_type: string;
@@ -54,6 +76,16 @@ interface Expense {
   receipt_url?: string;
 }
 
+/**
+ * @interface Charge
+ * @description The charge interface.
+ * @property {string} id - The charge ID.
+ * @property {string} charge_type - The charge type.
+ * @property {number} amount - The charge amount.
+ * @property {string} charged_to - The person charged to.
+ * @property {string} status - The charge status.
+ * @property {string} [description] - The charge description.
+ */
 interface Charge {
   id: string;
   charge_type: string;
@@ -63,6 +95,15 @@ interface Charge {
   description?: string;
 }
 
+/**
+ * @interface LoadAssignment
+ * @description The load assignment interface.
+ * @property {string} id - The assignment ID.
+ * @property {string} load_id - The load ID.
+ * @property {string} truck_id - The truck ID.
+ * @property {number} commission_percentage - The commission percentage.
+ * @property {number} commission_amount - The commission amount.
+ */
 interface LoadAssignment {
   id: string;
   load_id: string;
@@ -71,6 +112,16 @@ interface LoadAssignment {
   commission_amount: number;
 }
 
+/**
+ * @interface Load
+ * @description The load interface.
+ * @property {string} id - The load ID.
+ * @property {number} provider_freight - The provider freight.
+ * @property {number} truck_freight - The truck freight.
+ * @property {number} [profit] - The profit.
+ * @property {string} status - The load status.
+ * @property {string} [payment_model] - The payment model.
+ */
 interface Load {
   id: string;
   provider_freight: number;
@@ -80,6 +131,14 @@ interface Load {
   payment_model?: string;
 }
 
+/**
+ * @interface TransactionWorkflowDialogProps
+ * @description The props for the TransactionWorkflowDialog component.
+ * @property {Load} load - The load.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ * @property {() => void} onRefresh - The function to call when the data needs to be refreshed.
+ */
 interface TransactionWorkflowDialogProps {
   load: Load;
   open: boolean;
@@ -101,6 +160,12 @@ const WORKFLOW_STEPS = [
   { key: "completed", label: "Final Settlement", icon: CheckCircle2, color: "text-success" },
 ];
 
+/**
+ * @name TransactionWorkflowDialog
+ * @description A dialog for managing the transaction workflow of a load.
+ * @param {TransactionWorkflowDialogProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const TransactionWorkflowDialog = ({
   load,
   open,

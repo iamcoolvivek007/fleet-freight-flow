@@ -5,6 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Edit, Phone, Mail, MapPin, User, Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * @interface LoadProvidersListProps
+ * @description The props for the LoadProvidersList component.
+ * @property {LoadProvider[]} providers - The list of providers.
+ * @property {boolean} loading - Whether the list is loading.
+ * @property {(provider: LoadProvider) => void} onEdit - The function to call when the edit button is clicked.
+ * @property {(provider: LoadProvider) => void} onViewDetails - The function to call when the view details button is clicked.
+ * @property {() => void} onRefresh - The function to call when the list needs to be refreshed.
+ */
 interface LoadProvidersListProps {
   providers: LoadProvider[];
   loading: boolean;
@@ -13,6 +22,12 @@ interface LoadProvidersListProps {
   onRefresh: () => void;
 }
 
+/**
+ * @name LoadProvidersList
+ * @description A list of load providers.
+ * @param {LoadProvidersListProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const LoadProvidersList = ({ providers, loading, onEdit, onViewDetails }: LoadProvidersListProps) => {
   if (loading) {
     return (

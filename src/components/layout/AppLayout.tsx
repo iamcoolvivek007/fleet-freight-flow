@@ -3,19 +3,24 @@ import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, 
-  Truck, 
-  Users, 
-  Package, 
-  CreditCard, 
-  FileText, 
+import {
+  LayoutDashboard,
+  Truck,
+  Users,
+  Package,
+  CreditCard,
+  FileText,
   LogOut,
   Menu,
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * @name AppLayout
+ * @description The layout for the application.
+ * @returns {JSX.Element | null} - The JSX for the component.
+ */
 const AppLayout = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);

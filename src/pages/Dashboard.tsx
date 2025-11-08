@@ -9,6 +9,21 @@ import { getCashBalanceByMethod } from "@/lib/financialCalculations";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
+/**
+ * @interface DashboardStats
+ * @description The dashboard stats interface.
+ * @property {number} totalTrucks - The total number of trucks.
+ * @property {number} activeTrucks - The number of active trucks.
+ * @property {number} assignedTrucks - The number of assigned trucks.
+ * @property {number} totalLoads - The total number of loads.
+ * @property {number} activeLoads - The number of active loads.
+ * @property {number} totalRevenue - The total revenue.
+ * @property {number} totalProfit - The total profit.
+ * @property {number} pendingTransactions - The number of pending transactions.
+ * @property {number} cashBalance - The cash balance.
+ * @property {number} upiBalance - The UPI balance.
+ * @property {number} bankBalance - The bank balance.
+ */
 interface DashboardStats {
   totalTrucks: number;
   activeTrucks: number;
@@ -23,6 +38,11 @@ interface DashboardStats {
   bankBalance: number;
 }
 
+/**
+ * @name Dashboard
+ * @description The dashboard page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);

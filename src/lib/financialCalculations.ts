@@ -1,3 +1,11 @@
+/**
+ * @interface Transaction
+ * @description The transaction interface.
+ * @property {string} id - The transaction ID.
+ * @property {string} transaction_type - The transaction type.
+ * @property {number} amount - The transaction amount.
+ * @property {string} payment_method - The payment method.
+ */
 interface Transaction {
   id: string;
   transaction_type: string;
@@ -5,12 +13,27 @@ interface Transaction {
   payment_method: string;
 }
 
+/**
+ * @interface Expense
+ * @description The expense interface.
+ * @property {string} id - The expense ID.
+ * @property {number} amount - The expense amount.
+ * @property {string} payment_method - The payment method.
+ */
 interface Expense {
   id: string;
   amount: number;
   payment_method: string;
 }
 
+/**
+ * @interface Charge
+ * @description The charge interface.
+ * @property {string} id - The charge ID.
+ * @property {number} amount - The charge amount.
+ * @property {string} charged_to - The person charged to.
+ * @property {string} status - The charge status.
+ */
 interface Charge {
   id: string;
   amount: number;
@@ -18,25 +41,60 @@ interface Charge {
   status: string;
 }
 
+/**
+ * @interface LoadAssignment
+ * @description The load assignment interface.
+ * @property {number | null} commission_amount - The commission amount.
+ * @property {number | null} commission_percentage - The commission percentage.
+ */
 interface LoadAssignment {
   commission_amount: number | null;
   commission_percentage: number | null;
 }
 
+/**
+ * @interface Load
+ * @description The load interface.
+ * @property {number} provider_freight - The provider freight.
+ * @property {number | null} truck_freight - The truck freight.
+ * @property {string} [payment_model] - The payment model.
+ */
 interface Load {
   provider_freight: number;
   truck_freight: number | null;
   payment_model?: string;
 }
 
+/**
+ * @name isInflow
+ * @description Checks if a transaction type is an inflow.
+ * @param {string} transactionType - The transaction type.
+ * @returns {boolean} - Whether the transaction type is an inflow.
+ */
 export const isInflow = (transactionType: string): boolean => {
   return ['advance_from_provider', 'balance_from_provider', 'commission'].includes(transactionType);
 };
 
+/**
+ * @name isOutflow
+ * @description Checks if a transaction type is an outflow.
+ * @param {string} transactionType - The transaction type.
+ * @returns {boolean} - Whether the transaction type is an outflow.
+ */
 export const isOutflow = (transactionType: string): boolean => {
   return ['advance_to_driver', 'balance_to_driver'].includes(transactionType);
 };
 
+/**
+ * @name calculateLoadFinancials
+ * @description Calculates the financials for a load.
+ * @param {Load} load - The load.
+ * @param {LoadAssignment | null} assignment - The load assignment.
+ * @param {Transaction[]} transactions - The transactions.
+ * @param {Expense[]} expenses - The expenses.
+ * @param {Charge[]} charges - The charges.
+ * @returns {object} - The financials for the load.
+ */
 export const calculateLoadFinancials = (
   load: Load,
   assignment: LoadAssignment | null,

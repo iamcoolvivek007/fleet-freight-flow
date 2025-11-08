@@ -7,12 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+/**
+ * @interface DateRangePickerProps
+ * @description The props for the DateRangePicker component.
+ * @property {DateRange | undefined} dateRange - The selected date range.
+ * @property {(range: DateRange | undefined) => void} onDateRangeChange - The function to call when the date range changes.
+ * @property {string} [className] - The class name for the component.
+ */
 interface DateRangePickerProps {
   dateRange: DateRange | undefined;
   onDateRangeChange: (range: DateRange | undefined) => void;
   className?: string;
 }
 
+/**
+ * @name DateRangePicker
+ * @description A component for selecting a date range.
+ * @param {DateRangePickerProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX element for the component.
+ */
 export const DateRangePicker = ({ dateRange, onDateRangeChange, className }: DateRangePickerProps) => {
   return (
     <div className={cn("grid gap-2", className)}>

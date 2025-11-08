@@ -1,73 +1,72 @@
-# Welcome to your Lovable project
+# FreightFlow
 
-## Project info
+FreightFlow is a comprehensive logistics management application designed for truck parking and freight businesses. It allows users to manage trucks, load providers, loads, and transactions in a single platform.
 
-**URL**: https://lovable.dev/projects/12610572-8d9f-4fff-8a4f-918faaf458db
+## Features
 
-## How can I edit this code?
+- **Dashboard:** Get an overview of your logistics operations, including total trucks, loads, revenue, and profit.
+- **Truck Management:** Add, edit, and track your trucks, including driver and owner information, truck type, and status.
+- **Load Provider Management:** Manage your load provider clients, including contact information and load history.
+- **Load Management:** Create, assign, and track loads from start to finish, including material details, freight costs, and profit.
+- **Transaction Management:** Record and manage all transactions, including advances, payments, expenses, and charges.
+- **Financial Reports:** Generate detailed reports to analyze your business performance, including daily load reports, driver balance sheets, and party balance sheets.
 
-There are several ways of editing your application.
+## Technologies Used
 
-**Use Lovable**
+- **Vite:** A fast build tool for modern web projects.
+- **React:** A JavaScript library for building user interfaces.
+- **TypeScript:** A typed superset of JavaScript that compiles to plain JavaScript.
+- **Tailwind CSS:** A utility-first CSS framework for rapid UI development.
+- **shadcn/ui:** A collection of re-usable components built using Radix UI and Tailwind CSS.
+- **Supabase:** An open-source Firebase alternative for building secure and scalable applications.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/12610572-8d9f-4fff-8a4f-918faaf458db) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js (v16 or higher)
+- npm
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone the repository:
 
-Follow these steps:
+   ```bash
+   git clone <YOUR_GIT_URL>
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2. Navigate to the project directory:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+   ```bash
+   cd <YOUR_PROJECT_NAME>
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Install the dependencies:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+   ```bash
+   npm install
+   ```
 
-**Edit a file directly in GitHub**
+4. Create a `.env` file in the root of the project and add the following environment variables:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+   ```env
+   VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
+   VITE_SUPABASE_PUBLISHABLE_KEY=<YOUR_SUPABASE_PUBLISHABLE_KEY>
+   ```
 
-**Use GitHub Codespaces**
+5. Start the development server:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+   ```bash
+   npm run dev
+   ```
 
-## What technologies are used for this project?
+The application will be available at `http://localhost:5173`.
 
-This project is built with:
+## Usage
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/12610572-8d9f-4fff-8a4f-918faaf458db) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. **Sign up:** Create a new account to get started.
+2. **Add Trucks:** Add your trucks to the system, including driver and owner information.
+3. **Add Load Providers:** Add your load provider clients.
+4. **Create Loads:** Create new loads and assign them to your trucks.
+5. **Manage Transactions:** Record all transactions related to your loads, including advances, payments, and expenses.
+6. **Generate Reports:** Use the reports page to analyze your business performance.

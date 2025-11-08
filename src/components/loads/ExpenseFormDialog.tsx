@@ -9,6 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
 
+/**
+ * @interface ExpenseFormDialogProps
+ * @description The props for the ExpenseFormDialog component.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ * @property {string} loadAssignmentId - The ID of the load assignment.
+ * @property {() => void} onSuccess - The function to call when the expense is successfully added.
+ */
 interface ExpenseFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,6 +41,12 @@ const PAYMENT_METHODS = {
   cheque: "Cheque",
 };
 
+/**
+ * @name ExpenseFormDialog
+ * @description A dialog for adding an expense to a load.
+ * @param {ExpenseFormDialogProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const ExpenseFormDialog = ({
   open,
   onOpenChange,

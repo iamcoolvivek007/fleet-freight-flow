@@ -13,6 +13,23 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 
+/**
+ * @interface DailyLoadData
+ * @description The daily load data interface.
+ * @property {string} load_id - The load ID.
+ * @property {string} truck_number - The truck number.
+ * @property {string} loading_location - The loading location.
+ * @property {string} unloading_location - The unloading location.
+ * @property {string} material_description - The material description.
+ * @property {string} status - The load status.
+ * @property {number} provider_freight - The provider freight.
+ * @property {number} truck_freight - The truck freight.
+ * @property {string} assigned_at - The assignment date.
+ * @property {number} advances - The advances.
+ * @property {number} expenses - The expenses.
+ * @property {number} profit - The profit.
+ * @property {string} payment_model - The payment model.
+ */
 interface DailyLoadData {
   load_id: string;
   truck_number: string;
@@ -29,6 +46,11 @@ interface DailyLoadData {
   payment_model: string;
 }
 
+/**
+ * @name DailyLoadReport
+ * @description A component to display the daily load report.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const DailyLoadReport = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [reportData, setReportData] = useState<DailyLoadData[]>([]);

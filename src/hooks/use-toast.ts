@@ -5,6 +5,14 @@ import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
 
+/**
+ * @type ToasterToast
+ * @description The type for a toaster toast.
+ * @property {string} id - The toast ID.
+ * @property {React.ReactNode} [title] - The toast title.
+ * @property {React.ReactNode} [description] - The toast description.
+ * @property {ToastActionElement} [action] - The toast action.
+ */
 type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;

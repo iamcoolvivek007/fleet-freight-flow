@@ -7,12 +7,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { LoadProvider } from "@/pages/LoadProviders";
 
+/**
+ * @interface LoadProviderFormProps
+ * @description The props for the LoadProviderForm component.
+ * @property {LoadProvider | null} [provider] - The provider to edit.
+ * @property {() => void} onSuccess - The function to call when the form is successfully submitted.
+ * @property {() => void} onCancel - The function to call when the form is cancelled.
+ */
 interface LoadProviderFormProps {
   provider?: LoadProvider | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
+/**
+ * @name LoadProviderForm
+ * @description A form for adding or editing a load provider.
+ * @param {LoadProviderFormProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const LoadProviderForm = ({ provider, onSuccess, onCancel }: LoadProviderFormProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({

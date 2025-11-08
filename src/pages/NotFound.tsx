@@ -1,6 +1,11 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
+/**
+ * @name NotFound
+ * @description The 404 page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const NotFound = () => {
   const location = useLocation();
 

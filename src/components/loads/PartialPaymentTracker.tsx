@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
+/**
+ * @interface Payment
+ * @description The payment interface.
+ * @property {string} id - The payment ID.
+ * @property {number} amount - The payment amount.
+ * @property {string} payment_method - The payment method.
+ * @property {string} transaction_date - The transaction date.
+ */
 interface Payment {
   id: string;
   amount: number;
@@ -12,6 +20,19 @@ interface Payment {
   transaction_date: string;
 }
 
+/**
+ * @interface PartialPaymentTrackerProps
+ * @description The props for the PartialPaymentTracker component.
+ * @property {string} title - The title of the tracker.
+ * @property {Payment[]} payments - The list of payments.
+ * @property {number} totalPaid - The total amount paid.
+ * @property {number} targetAmount - The target amount.
+ * @property {number} percentage - The percentage paid.
+ * @property {() => void} onAddPayment - The function to call when the add payment button is clicked.
+ * @property {(payment: Payment) => void} [onEditPayment] - The function to call when the edit payment button is clicked.
+ * @property {(paymentId: string) => void} [onDeletePayment] - The function to call when the delete payment button is clicked.
+ * @property {boolean} [allowEdit] - Whether to allow editing and deleting payments.
+ */
 interface PartialPaymentTrackerProps {
   title: string;
   payments: Payment[];
@@ -24,6 +45,12 @@ interface PartialPaymentTrackerProps {
   allowEdit?: boolean;
 }
 
+/**
+ * @name PartialPaymentTracker
+ * @description A component to track partial payments.
+ * @param {PartialPaymentTrackerProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const PartialPaymentTracker = ({
   title,
   payments,

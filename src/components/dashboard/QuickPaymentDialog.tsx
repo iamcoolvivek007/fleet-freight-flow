@@ -13,12 +13,30 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
+/**
+ * @interface ProviderOutstanding
+ * @description The provider outstanding interface.
+ * @property {string} id - The provider ID.
+ * @property {string} provider_name - The provider name.
+ * @property {number} outstanding - The outstanding balance.
+ */
 interface ProviderOutstanding {
   id: string;
   provider_name: string;
   outstanding: number;
 }
 
+/**
+ * @interface Load
+ * @description The load interface.
+ * @property {string} id - The load ID.
+ * @property {string} loading_location - The loading location.
+ * @property {string} unloading_location - The unloading location.
+ * @property {number} provider_freight - The provider freight.
+ * @property {string} assignment_id - The assignment ID.
+ * @property {number} received - The received amount.
+ * @property {number} remaining - The remaining amount.
+ */
 interface Load {
   id: string;
   loading_location: string;
@@ -29,6 +47,14 @@ interface Load {
   remaining: number;
 }
 
+/**
+ * @interface QuickPaymentDialogProps
+ * @description The props for the QuickPaymentDialog component.
+ * @property {ProviderOutstanding} provider - The provider.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ * @property {() => void} onSuccess - The function to call when the payment is successful.
+ */
 interface QuickPaymentDialogProps {
   provider: ProviderOutstanding;
   open: boolean;
@@ -36,6 +62,12 @@ interface QuickPaymentDialogProps {
   onSuccess: () => void;
 }
 
+/**
+ * @name QuickPaymentDialog
+ * @description A dialog for making a quick payment.
+ * @param {QuickPaymentDialogProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const QuickPaymentDialog = ({ provider, open, onOpenChange, onSuccess }: QuickPaymentDialogProps) => {
   const [loads, setLoads] = useState<Load[]>([]);
   const [selectedLoadId, setSelectedLoadId] = useState<string>("");

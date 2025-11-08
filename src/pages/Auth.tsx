@@ -8,6 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Truck } from "lucide-react";
 
+/**
+ * @name Auth
+ * @description The authentication page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");

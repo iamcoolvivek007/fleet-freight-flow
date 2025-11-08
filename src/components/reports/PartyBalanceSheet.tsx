@@ -6,6 +6,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * @interface PartyBalance
+ * @description The party balance interface.
+ * @property {string} provider_id - The provider ID.
+ * @property {string} provider_name - The provider name.
+ * @property {number} total_freight - The total freight.
+ * @property {number} total_received - The total received.
+ * @property {number} balance - The balance.
+ * @property {number} load_count - The load count.
+ */
 interface PartyBalance {
   provider_id: string;
   provider_name: string;
@@ -15,6 +25,11 @@ interface PartyBalance {
   load_count: number;
 }
 
+/**
+ * @name PartyBalanceSheet
+ * @description A component to display the party balance sheet.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const PartyBalanceSheet = () => {
   const [loading, setLoading] = useState(true);
   const [partyBalances, setPartyBalances] = useState<PartyBalance[]>([]);

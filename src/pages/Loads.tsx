@@ -8,6 +8,23 @@ import { LoadsList } from "@/components/loads/LoadsList";
 import { SearchBar } from "@/components/common/SearchBar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+/**
+ * @interface Load
+ * @description The load interface.
+ * @property {string} id - The load ID.
+ * @property {string} user_id - The user ID.
+ * @property {string} load_provider_id - The load provider ID.
+ * @property {string} loading_location - The loading location.
+ * @property {string} unloading_location - The unloading location.
+ * @property {string} material_description - The material description.
+ * @property {number} material_weight - The material weight.
+ * @property {number} provider_freight - The provider freight.
+ * @property {number | null} truck_freight - The truck freight.
+ * @property {string} status - The load status.
+ * @property {number} [profit] - The profit.
+ * @property {string} [payment_model] - The payment model.
+ * @property {string} created_at - The creation date.
+ */
 export interface Load {
   id: string;
   user_id: string;
@@ -24,6 +41,11 @@ export interface Load {
   created_at: string;
 }
 
+/**
+ * @name Loads
+ * @description The loads page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Loads = () => {
   const [loads, setLoads] = useState<Load[]>([]);
   const [filteredLoads, setFilteredLoads] = useState<Load[]>([]);

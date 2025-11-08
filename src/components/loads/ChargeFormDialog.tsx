@@ -8,6 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/**
+ * @interface ChargeFormDialogProps
+ * @description The props for the ChargeFormDialog component.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ * @property {string} loadAssignmentId - The ID of the load assignment.
+ * @property {() => void} onSuccess - The function to call when the charge is successfully added.
+ */
 interface ChargeFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,6 +31,12 @@ const CHARGE_TYPES = {
   other: "Other",
 };
 
+/**
+ * @name ChargeFormDialog
+ * @description A dialog for adding an additional charge to a load.
+ * @param {ChargeFormDialogProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const ChargeFormDialog = ({
   open,
   onOpenChange,

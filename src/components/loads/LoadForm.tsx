@@ -10,12 +10,25 @@ import { Load } from "@/pages/Loads";
 import { LoadProvider } from "@/pages/LoadProviders";
 import { PaymentModelSelector } from "./PaymentModelSelector";
 
+/**
+ * @interface LoadFormProps
+ * @description The props for the LoadForm component.
+ * @property {Load | null} [load] - The load to edit.
+ * @property {() => void} onSuccess - The function to call when the form is successfully submitted.
+ * @property {() => void} onCancel - The function to call when the form is cancelled.
+ */
 interface LoadFormProps {
   load?: Load | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
+/**
+ * @name LoadForm
+ * @description A form for creating or editing a load.
+ * @param {LoadFormProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<LoadProvider[]>([]);

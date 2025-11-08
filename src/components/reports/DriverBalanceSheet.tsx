@@ -6,6 +6,18 @@ import { Download, Share2, Truck as TruckIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * @interface DriverBalance
+ * @description The driver balance interface.
+ * @property {string} truck_id - The truck ID.
+ * @property {string} truck_number - The truck number.
+ * @property {string} driver_name - The driver name.
+ * @property {string} driver_phone - The driver phone.
+ * @property {number} total_freight - The total freight.
+ * @property {number} total_paid - The total paid.
+ * @property {number} balance - The balance.
+ * @property {number} load_count - The load count.
+ */
 interface DriverBalance {
   truck_id: string;
   truck_number: string;
@@ -17,6 +29,11 @@ interface DriverBalance {
   load_count: number;
 }
 
+/**
+ * @name DriverBalanceSheet
+ * @description A component to display the driver balance sheet.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const DriverBalanceSheet = () => {
   const [loading, setLoading] = useState(true);
   const [driverBalances, setDriverBalances] = useState<DriverBalance[]>([]);
