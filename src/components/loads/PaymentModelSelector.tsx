@@ -3,11 +3,23 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
+/**
+ * @interface PaymentModelSelectorProps
+ * @description The props for the PaymentModelSelector component.
+ * @property {string} value - The selected value.
+ * @property {(value: string) => void} onChange - The function to call when the value changes.
+ */
 interface PaymentModelSelectorProps {
   value: string;
   onChange: (value: string) => void;
 }
 
+/**
+ * @name PaymentModelSelector
+ * @description A component for selecting the payment model.
+ * @param {PaymentModelSelectorProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const PaymentModelSelector = ({ value, onChange }: PaymentModelSelectorProps) => {
   return (
     <div className="space-y-3">

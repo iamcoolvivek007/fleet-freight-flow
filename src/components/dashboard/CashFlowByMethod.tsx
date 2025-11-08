@@ -1,12 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Wallet, Smartphone, Building2 } from "lucide-react";
 
+/**
+ * @interface CashFlowByMethodProps
+ * @description The props for the CashFlowByMethod component.
+ * @property {number} cashBalance - The cash balance.
+ * @property {number} upiBalance - The UPI balance.
+ * @property {number} bankBalance - The bank balance.
+ */
 interface CashFlowByMethodProps {
   cashBalance: number;
   upiBalance: number;
   bankBalance: number;
 }
 
+/**
+ * @name CashFlowByMethod
+ * @description A component to display the cash flow by method.
+ * @param {CashFlowByMethodProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX element for the component.
+ */
 export const CashFlowByMethod = ({ cashBalance, upiBalance, bankBalance }: CashFlowByMethodProps) => {
   const total = cashBalance + upiBalance + bankBalance;
 

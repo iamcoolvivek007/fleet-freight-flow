@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowDownToLine, 
-  ArrowUpFromLine, 
-  Wallet, 
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Wallet,
   Receipt,
   DollarSign,
   Download,
@@ -40,6 +40,18 @@ import { format, isWithinInterval } from "date-fns";
 import { TransactionFormDialog } from "@/components/loads/TransactionFormDialog";
 import { toast } from "sonner";
 
+/**
+ * @interface Transaction
+ * @description The transaction interface.
+ * @property {string} id - The transaction ID.
+ * @property {number} amount - The transaction amount.
+ * @property {string} transaction_type - The transaction type.
+ * @property {string} payment_method - The payment method.
+ * @property {string} transaction_date - The transaction date.
+ * @property {string} [notes] - The transaction notes.
+ * @property {string} [payment_details] - The payment details.
+ * @property {string} [load_assignment_id] - The load assignment ID.
+ */
 interface Transaction {
   id: string;
   amount: number;
@@ -51,6 +63,17 @@ interface Transaction {
   load_assignment_id?: string;
 }
 
+/**
+ * @interface Expense
+ * @description The expense interface.
+ * @property {string} id - The expense ID.
+ * @property {number} amount - The expense amount.
+ * @property {string} expense_type - The expense type.
+ * @property {string} payment_method - The payment method.
+ * @property {string} payment_date - The payment date.
+ * @property {string} [description] - The expense description.
+ * @property {string} load_assignment_id - The load assignment ID.
+ */
 interface Expense {
   id: string;
   amount: number;
@@ -61,6 +84,17 @@ interface Expense {
   load_assignment_id: string;
 }
 
+/**
+ * @interface Charge
+ * @description The charge interface.
+ * @property {string} id - The charge ID.
+ * @property {number} amount - The charge amount.
+ * @property {string} charge_type - The charge type.
+ * @property {string} charged_to - The person charged to.
+ * @property {string} [description] - The charge description.
+ * @property {string} load_assignment_id - The load assignment ID.
+ * @property {string} created_at - The creation date.
+ */
 interface Charge {
   id: string;
   amount: number;
@@ -71,6 +105,18 @@ interface Charge {
   created_at: string;
 }
 
+/**
+ * @interface LoadAssignment
+ * @description The load assignment interface.
+ * @property {string} id - The assignment ID.
+ * @property {string} load_id - The load ID.
+ * @property {string} truck_id - The truck ID.
+ * @property {object} [loads] - The loads object.
+ * @property {string} loads.loading_location - The loading location.
+ * @property {string} loads.unloading_location - The unloading location.
+ * @property {object} [trucks] - The trucks object.
+ * @property {string} trucks.truck_number - The truck number.
+ */
 interface LoadAssignment {
   id: string;
   load_id: string;
@@ -84,6 +130,18 @@ interface LoadAssignment {
   };
 }
 
+/**
+ * @interface CombinedTransaction
+ * @description The combined transaction interface.
+ * @property {string} id - The transaction ID.
+ * @property {number} amount - The transaction amount.
+ * @property {string} type - The transaction type.
+ * @property {string} payment_method - The payment method.
+ * @property {string} date - The transaction date.
+ * @property {string} [description] - The transaction description.
+ * @property {LoadAssignment} [load_assignment] - The load assignment.
+ * @property {'transaction' | 'expense' | 'charge'} category - The transaction category.
+ */
 interface CombinedTransaction {
   id: string;
   amount: number;
@@ -95,6 +153,11 @@ interface CombinedTransaction {
   category: 'transaction' | 'expense' | 'charge';
 }
 
+/**
+ * @name Transactions
+ * @description The transactions page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Transactions = () => {
   const [allTransactions, setAllTransactions] = useState<CombinedTransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<CombinedTransaction[]>([]);

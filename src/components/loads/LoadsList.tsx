@@ -10,6 +10,16 @@ import { LoadProvider } from "@/pages/LoadProviders";
 import { AssignTruckDialog } from "./AssignTruckDialog";
 import { TransactionWorkflowDialog } from "./TransactionWorkflowDialog";
 
+/**
+ * @interface LoadAssignment
+ * @description The load assignment interface.
+ * @property {string} id - The assignment ID.
+ * @property {string} truck_id - The truck ID.
+ * @property {string} load_id - The load ID.
+ * @property {string} assigned_at - The assignment date.
+ * @property {number} commission_percentage - The commission percentage.
+ * @property {number} commission_amount - The commission amount.
+ */
 interface LoadAssignment {
   id: string;
   truck_id: string;
@@ -19,10 +29,23 @@ interface LoadAssignment {
   commission_amount: number;
 }
 
+/**
+ * @interface TruckInfo
+ * @description The truck info interface.
+ * @property {string} truck_number - The truck number.
+ */
 interface TruckInfo {
   truck_number: string;
 }
 
+/**
+ * @interface LoadsListProps
+ * @description The props for the LoadsList component.
+ * @property {Load[]} loads - The list of loads.
+ * @property {boolean} loading - Whether the list is loading.
+ * @property {(load: Load) => void} onEdit - The function to call when the edit button is clicked.
+ * @property {() => void} onRefresh - The function to call when the list needs to be refreshed.
+ */
 interface LoadsListProps {
   loads: Load[];
   loading: boolean;
@@ -30,6 +53,12 @@ interface LoadsListProps {
   onRefresh: () => void;
 }
 
+/**
+ * @name LoadsList
+ * @description A component to display a list of loads.
+ * @param {LoadsListProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps) => {
   const [providers, setProviders] = useState<Record<string, LoadProvider>>({});
   const [assignments, setAssignments] = useState<Record<string, { assignment: LoadAssignment; truck: TruckInfo }>>({});

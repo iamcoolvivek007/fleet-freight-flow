@@ -8,6 +8,21 @@ import { Edit, Phone, User, Truck as TruckIcon, History, ChevronDown, MapPin } f
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
+/**
+ * @interface LoadHistory
+ * @description The load history interface.
+ * @property {string} id - The history ID.
+ * @property {string} load_id - The load ID.
+ * @property {string} assigned_at - The assignment date.
+ * @property {object} load - The load object.
+ * @property {string} load.id - The load ID.
+ * @property {string} load.loading_location - The loading location.
+ * @property {string} load.unloading_location - The unloading location.
+ * @property {string} load.status - The load status.
+ * @property {number} load.provider_freight - The provider freight.
+ * @property {number} load.truck_freight - The truck freight.
+ * @property {string} load.created_at - The creation date.
+ */
 interface LoadHistory {
   id: string;
   load_id: string;
@@ -23,6 +38,14 @@ interface LoadHistory {
   };
 }
 
+/**
+ * @interface TrucksListProps
+ * @description The props for the TrucksList component.
+ * @property {Truck[]} trucks - The list of trucks.
+ * @property {boolean} loading - Whether the list is loading.
+ * @property {(truck: Truck) => void} onEdit - The function to call when the edit button is clicked.
+ * @property {() => void} onRefresh - The function to call when the list needs to be refreshed.
+ */
 interface TrucksListProps {
   trucks: Truck[];
   loading: boolean;
@@ -30,6 +53,12 @@ interface TrucksListProps {
   onRefresh: () => void;
 }
 
+/**
+ * @name TrucksList
+ * @description A component to display a list of trucks.
+ * @param {TrucksListProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const TrucksList = ({ trucks, loading, onEdit }: TrucksListProps) => {
   const [loadHistory, setLoadHistory] = useState<Record<string, LoadHistory[]>>({});
   const [loadingHistory, setLoadingHistory] = useState(false);

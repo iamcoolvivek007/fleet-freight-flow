@@ -7,6 +7,17 @@ import { LoadProvidersList } from "@/components/load-providers/LoadProvidersList
 import { ProviderDetailDialog } from "@/components/load-providers/ProviderDetailDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+/**
+ * @interface LoadProvider
+ * @description The load provider interface.
+ * @property {string} id - The provider ID.
+ * @property {string} provider_name - The provider name.
+ * @property {string | null} contact_person - The contact person.
+ * @property {string} phone - The phone number.
+ * @property {string | null} email - The email address.
+ * @property {string | null} address - The address.
+ * @property {boolean} is_active - Whether the provider is active.
+ */
 export interface LoadProvider {
   id: string;
   provider_name: string;
@@ -17,6 +28,11 @@ export interface LoadProvider {
   is_active: boolean;
 }
 
+/**
+ * @name LoadProviders
+ * @description The load providers page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const LoadProviders = () => {
   const [providers, setProviders] = useState<LoadProvider[]>([]);
   const [loading, setLoading] = useState(true);

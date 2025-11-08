@@ -7,6 +7,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, DollarSign, TrendingDown } from "lucide-react";
 import { QuickPaymentDialog } from "./QuickPaymentDialog";
 
+/**
+ * @interface ProviderOutstanding
+ * @description The provider outstanding interface.
+ * @property {string} id - The provider ID.
+ * @property {string} provider_name - The provider name.
+ * @property {number} totalFreight - The total freight.
+ * @property {number} totalReceived - The total received.
+ * @property {number} outstanding - The outstanding balance.
+ * @property {number} loadCount - The load count.
+ */
 interface ProviderOutstanding {
   id: string;
   provider_name: string;
@@ -16,6 +26,11 @@ interface ProviderOutstanding {
   loadCount: number;
 }
 
+/**
+ * @name TopProvidersWidget
+ * @description A widget to display the top providers with outstanding balances.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const TopProvidersWidget = () => {
   const [providers, setProviders] = useState<ProviderOutstanding[]>([]);
   const [loading, setLoading] = useState(true);

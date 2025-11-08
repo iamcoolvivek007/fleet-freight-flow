@@ -8,12 +8,25 @@ import { toast } from "sonner";
 import { Truck } from "@/pages/Trucks";
 import { Upload, X } from "lucide-react";
 
+/**
+ * @interface TruckFormProps
+ * @description The props for the TruckForm component.
+ * @property {Truck | null} [truck] - The truck to edit.
+ * @property {() => void} onSuccess - The function to call when the form is successfully submitted.
+ * @property {() => void} onCancel - The function to call when the form is cancelled.
+ */
 interface TruckFormProps {
   truck?: Truck | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
+/**
+ * @name TruckForm
+ * @description A form for creating or editing a truck.
+ * @param {TruckFormProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const TruckForm = ({ truck, onSuccess, onCancel }: TruckFormProps) => {
   const [loading, setLoading] = useState(false);
   const [truckImage, setTruckImage] = useState<File | null>(null);

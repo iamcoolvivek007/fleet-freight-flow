@@ -11,6 +11,19 @@ import { DriverBalanceSheet } from "@/components/reports/DriverBalanceSheet";
 import { DailyLoadReport } from "@/components/reports/DailyLoadReport";
 import { toast } from "sonner";
 
+/**
+ * @interface ReportData
+ * @description The report data interface.
+ * @property {number} totalRevenue - The total revenue.
+ * @property {number} totalProfit - The total profit.
+ * @property {number} totalLoads - The total number of loads.
+ * @property {number} completedLoads - The number of completed loads.
+ * @property {number} avgProfit - The average profit.
+ * @property {number} totalExpenses - The total expenses.
+ * @property {number} totalReceivables - The total receivables.
+ * @property {number} totalPayables - The total payables.
+ * @property {number} cashInHand - The cash in hand.
+ */
 interface ReportData {
   totalRevenue: number;
   totalProfit: number;
@@ -23,6 +36,11 @@ interface ReportData {
   cashInHand: number;
 }
 
+/**
+ * @name Reports
+ * @description The reports page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("monthly");

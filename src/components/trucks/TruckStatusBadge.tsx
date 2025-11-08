@@ -1,12 +1,25 @@
 import { Badge } from "@/components/ui/badge";
 import { Truck, AlertCircle, Wrench } from "lucide-react";
 
+/**
+ * @interface TruckStatusBadgeProps
+ * @description The props for the TruckStatusBadge component.
+ * @property {boolean} isActive - Whether the truck is active.
+ * @property {string | null} [inactiveReason] - The reason the truck is inactive.
+ * @property {string} [loadId] - The ID of the load the truck is assigned to.
+ */
 interface TruckStatusBadgeProps {
   isActive: boolean;
   inactiveReason?: string | null;
   loadId?: string;
 }
 
+/**
+ * @name TruckStatusBadge
+ * @description A badge to display the status of a truck.
+ * @param {TruckStatusBadgeProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const TruckStatusBadge = ({ isActive, inactiveReason, loadId }: TruckStatusBadgeProps) => {
   if (isActive) {
     return (

@@ -8,6 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { Load } from "@/pages/Loads";
 
+/**
+ * @interface Truck
+ * @description The truck interface.
+ * @property {string} id - The truck ID.
+ * @property {string} truck_number - The truck number.
+ * @property {string} driver_name - The driver name.
+ * @property {string} truck_type - The truck type.
+ * @property {number} carrying_capacity - The carrying capacity.
+ */
 interface Truck {
   id: string;
   truck_number: string;
@@ -16,6 +25,14 @@ interface Truck {
   carrying_capacity: number;
 }
 
+/**
+ * @interface AssignTruckDialogProps
+ * @description The props for the AssignTruckDialog component.
+ * @property {Load} load - The load to assign a truck to.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ * @property {() => void} onSuccess - The function to call when the truck is successfully assigned.
+ */
 interface AssignTruckDialogProps {
   load: Load;
   open: boolean;
@@ -23,6 +40,12 @@ interface AssignTruckDialogProps {
   onSuccess: () => void;
 }
 
+/**
+ * @name AssignTruckDialog
+ * @description A dialog for assigning a truck to a load.
+ * @param {AssignTruckDialogProps} props - The props for the component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 export const AssignTruckDialog = ({ load, open, onOpenChange, onSuccess }: AssignTruckDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [trucks, setTrucks] = useState<Truck[]>([]);

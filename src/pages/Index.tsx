@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Truck, Package, TrendingUp, Users } from "lucide-react";
 
+/**
+ * @name Index
+ * @description The index page.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const Index = () => {
   const navigate = useNavigate();
 

@@ -16,6 +16,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/**
+ * @name App
+ * @description The main application component.
+ * @returns {JSX.Element} - The JSX for the component.
+ */
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

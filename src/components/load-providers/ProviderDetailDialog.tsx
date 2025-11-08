@@ -11,6 +11,21 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { User, Phone, Mail, MapPin, TrendingUp, DollarSign, AlertCircle, ChevronDown, Calendar } from "lucide-react";
 import { format } from "date-fns";
 
+/**
+ * @interface LoadData
+ * @description The load data interface.
+ * @property {string} id - The load ID.
+ * @property {string} loading_location - The loading location.
+ * @property {string} unloading_location - The unloading location.
+ * @property {string} material_description - The material description.
+ * @property {string} status - The load status.
+ * @property {number} provider_freight - The provider freight.
+ * @property {string} created_at - The creation date.
+ * @property {object} [assignment] - The assignment object.
+ * @property {string} assignment.id - The assignment ID.
+ * @property {object} assignment.truck - The truck object.
+ * @property {string} assignment.truck.truck_number - The truck number.
+ */
 interface LoadData {
   id: string;
   loading_location: string;
@@ -27,6 +42,16 @@ interface LoadData {
   };
 }
 
+/**
+ * @interface Transaction
+ * @description The transaction interface.
+ * @property {string} id - The transaction ID.
+ * @property {number} amount - The transaction amount.
+ * @property {string} transaction_type - The transaction type.
+ * @property {string} payment_method - The payment method.
+ * @property {string} transaction_date - The transaction date.
+ * @property {string} [payment_details] - The payment details.
+ */
 interface Transaction {
   id: string;
   amount: number;
@@ -36,12 +61,25 @@ interface Transaction {
   payment_details?: string;
 }
 
+/**
+ * @interface ProviderDetailDialogProps
+ * @description The props for the ProviderDetailDialog component.
+ * @property {LoadProvider | null} provider - The provider.
+ * @property {boolean} open - Whether the dialog is open.
+ * @property {(open: boolean) => void} onOpenChange - The function to call when the dialog is opened or closed.
+ */
 interface ProviderDetailDialogProps {
   provider: LoadProvider | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * @name ProviderDetailDialog
+ * @description A dialog to display the details of a provider.
+ * @param {ProviderDetailDialogProps} props - The props for the component.
+ * @returns {JSX.Element | null} - The JSX for the component.
+ */
 export const ProviderDetailDialog = ({ provider, open, onOpenChange }: ProviderDetailDialogProps) => {
   const [loads, setLoads] = useState<LoadData[]>([]);
   const [transactions, setTransactions] = useState<Record<string, Transaction[]>>({});
