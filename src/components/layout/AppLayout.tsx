@@ -110,6 +110,7 @@ const AppLayout = () => {
                 {item.label}
               </Button>
             ))}
+            <div className="text-center text-sm text-muted-foreground mt-4">created by vivek</div>
             <Button
               variant="ghost"
               className="w-full justify-start text-destructive hover:text-destructive"
@@ -147,6 +148,7 @@ const AppLayout = () => {
             ))}
           </nav>
           <div className="p-4 border-t border-border">
+            <div className="text-center text-sm text-muted-foreground mb-2">created by vivek</div>
             <Button
               variant="ghost"
               className="w-full justify-start text-destructive hover:text-destructive"
