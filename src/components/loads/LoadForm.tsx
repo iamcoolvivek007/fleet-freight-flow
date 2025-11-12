@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { Load } from "@/pages/Loads";
 import { LoadProvider } from "@/pages/LoadProviders";
@@ -42,6 +46,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
     truck_freight: "",
     status: "pending" as Load["status"],
     payment_model: "standard",
+    created_at: new Date().toISOString(),
   });
 
   useEffect(() => {
@@ -57,6 +62,7 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
         truck_freight: load.truck_freight?.toString() || "",
         status: load.status,
         payment_model: load.payment_model || "standard",
+        created_at: load.created_at,
       });
     }
   }, [load]);
@@ -125,24 +131,59 @@ export const LoadForm = ({ load, onSuccess, onCancel }: LoadFormProps) => {
         onChange={(value) => setFormData({ ...formData, payment_model: value })}
       />
 
-      <div className="space-y-2">
-        <Label htmlFor="load_provider_id">Load Provider *</Label>
-        <Select
-          value={formData.load_provider_id}
-          onValueChange={(value) => setFormData({ ...formData, load_provider_id: value })}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select provider" />
-          </SelectTrigger>
-          <SelectContent>
-            {providers.map((provider) => (
-              <SelectItem key={provider.id} value={provider.id}>
-                {provider.provider_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="load_provider_id">Load Provider *</Label>
+          <Select
+            value={formData.load_provider_id}
+            onValueChange={(value) =>
+              setFormData({ ...formData, load_provider_id: value })
+            }
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select provider" />
+            </SelectTrigger>
+            <SelectContent>
+              {providers.map((provider) => (
+                <SelectItem key={provider.id} value={provider.id}>
+                  {provider.provider_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="created_at">Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formData.created_at ? (
+                  format(new Date(formData.created_at), "PPP")
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={new Date(formData.created_at)}
+                onSelect={(date) =>
+                  setFormData({
+                    ...formData,
+                    created_at: date?.toISOString() || "",
+                  })
+                }
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
