@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, MapPin, Package, TrendingUp, Truck, Receipt } from "lucide-react";
+import { Edit, MapPin, Package, TrendingUp, Truck, Receipt, Trash2 } from "lucide-react";
 import type { Load } from "@/pages/Loads";
 import { LoadProvider } from "@/pages/LoadProviders";
 import { AssignTruckDialog } from "./AssignTruckDialog";
 import { TransactionWorkflowDialog } from "./TransactionWorkflowDialog";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 /**
  * @interface LoadAssignment
@@ -50,6 +51,7 @@ interface LoadsListProps {
   loads: Load[];
   loading: boolean;
   onEdit: (load: Load) => void;
+  onDelete: (loadId: string) => void;
   onRefresh: () => void;
 }
 
@@ -59,12 +61,14 @@ interface LoadsListProps {
  * @param {LoadsListProps} props - The props for the component.
  * @returns {JSX.Element} - The JSX for the component.
  */
-export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps) => {
+export const LoadsList = ({ loads, loading, onEdit, onDelete, onRefresh }: LoadsListProps) => {
   const [providers, setProviders] = useState<Record<string, LoadProvider>>({});
   const [assignments, setAssignments] = useState<Record<string, { assignment: LoadAssignment; truck: TruckInfo }>>({});
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [workflowDialogOpen, setWorkflowDialogOpen] = useState(false);
   const [selectedLoad, setSelectedLoad] = useState<Load | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [loadToDelete, setLoadToDelete] = useState<Load | null>(null);
 
   useEffect(() => {
     fetchProviders();
@@ -150,6 +154,23 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
   const handleOpenWorkflow = (load: Load) => {
     setSelectedLoad(load);
     setWorkflowDialogOpen(true);
+  };
+
+  const handleDeleteClick = (load: Load) => {
+    setLoadToDelete(load);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleCancelDelete = () => {
+    setLoadToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (loadToDelete) {
+      onDelete(loadToDelete.id);
+      handleCancelDelete();
+    }
   };
 
   if (loading) {
@@ -253,6 +274,14 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleDeleteClick(load)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
                 {load.status === "pending" && (
                   <Button size="sm" onClick={() => handleAssignTruck(load)}>
                     <Truck className="h-4 w-4 mr-1" />
@@ -287,6 +316,14 @@ export const LoadsList = ({ loads, loading, onEdit, onRefresh }: LoadsListProps)
           />
         </>
       )}
+
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Are you sure?"
+        description="This action cannot be undone. This will permanently delete the load."
+      />
     </div>
   );
 };
