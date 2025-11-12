@@ -125,6 +125,16 @@ const Loads = () => {
     handleCloseDialog();
   };
 
+  const handleDelete = async (loadId: string) => {
+    try {
+      const { error } = await supabase.from("loads").delete().eq("id", loadId);
+      if (error) throw error;
+      fetchLoads();
+    } catch (error) {
+      console.error("Error deleting load:", error);
+    }
+  };
+
   const statusCounts = {
     pending: loads.filter(l => l.status === 'pending').length,
     assigned: loads.filter(l => l.status === 'assigned').length,
@@ -174,6 +184,7 @@ const Loads = () => {
         loads={filteredLoads}
         loading={loading}
         onEdit={handleEdit}
+        onDelete={handleDelete}
         onRefresh={fetchLoads}
       />
 
