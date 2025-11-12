@@ -12,7 +12,8 @@ import {
   FileText,
   LogOut,
   Menu,
-  X
+  X,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,17 +26,31 @@ const AppLayout = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const fetchSessionAndProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setLoading(false);
-      if (!session) {
+
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        if (profile) {
+          setUserRole(profile.role);
+        }
+      } else {
         navigate("/auth");
       }
-    });
+      setLoading(false);
+    };
+
+    fetchSessionAndProfile();
 
     const {
       data: { subscription },
@@ -43,6 +58,18 @@ const AppLayout = () => {
       setSession(session);
       if (!session) {
         navigate("/auth");
+      } else {
+        const fetchProfile = async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+            if (profile) {
+              setUserRole(profile.role);
+            }
+        }
+        fetchProfile();
       }
     });
 
@@ -54,16 +81,46 @@ const AppLayout = () => {
     navigate("/auth");
   };
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-    { icon: Truck, label: "Trucks", path: "/trucks" },
-    { icon: Users, label: "Load Providers", path: "/load-providers" },
-    { icon: Package, label: "Loads", path: "/loads" },
-    { icon: CreditCard, label: "Transactions", path: "/transactions" },
-    { icon: FileText, label: "Reports", path: "/reports" },
-  ];
+  const [menuItems, setMenuItems] = useState([]);
 
-  if (loading) {
+  useEffect(() => {
+    const fetchPermissionsAndSetMenu = async () => {
+        if (session) {
+            const baseMenuItems = [
+                { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+                { icon: Truck, label: "Trucks", path: "/trucks" },
+                { icon: Users, label: "Load Providers", path: "/load-providers" },
+                { icon: Package, label: "Loads", path: "/loads" },
+                { icon: CreditCard, label: "Transactions", path: "/transactions" },
+                { icon: FileText, label: "Reports", path: "/reports" },
+            ];
+
+            if (userRole === 'admin') {
+                setMenuItems([...baseMenuItems, { icon: Settings, label: "User Management", path: "/user-management" }]);
+                return;
+            }
+
+            const { data: permissions, error } = await supabase
+                .from('user_permissions')
+                .select('permission')
+                .eq('user_id', session.user.id);
+
+            if (error) {
+                console.error("Error fetching permissions:", error);
+                setMenuItems([]);
+                return;
+            }
+
+            const allowedPages = permissions.map(p => p.permission);
+            const filteredMenuItems = baseMenuItems.filter(item => allowedPages.includes(item.path.replace('/', '')));
+            setMenuItems(filteredMenuItems);
+        }
+    };
+
+    fetchPermissionsAndSetMenu();
+  }, [session, userRole]);
+
+  if (loading || !userRole) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
