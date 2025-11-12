@@ -12,7 +12,10 @@ import Loads from "./pages/Loads";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
 import AppLayout from "./components/layout/AppLayout";
+import AdminLayout from "./components/layout/AdminLayout";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -31,12 +34,15 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route element={<AppLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/trucks" element={<Trucks />} />
-            <Route path="/load-providers" element={<LoadProviders />} />
-            <Route path="/loads" element={<Loads />} />
-            <Route path="/transactions" element={<Transactions />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/dashboard" element={<ProtectedRoute page="dashboard"><Dashboard /></ProtectedRoute>} />
+            <Route path="/trucks" element={<ProtectedRoute page="trucks"><Trucks /></ProtectedRoute>} />
+            <Route path="/load-providers" element={<ProtectedRoute page="load-providers"><LoadProviders /></ProtectedRoute>} />
+            <Route path="/loads" element={<ProtectedRoute page="loads"><Loads /></ProtectedRoute>} />
+            <Route path="/transactions" element={<ProtectedRoute page="transactions"><Transactions /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute page="reports"><Reports /></ProtectedRoute>} />
+          </Route>
+          <Route element={<AdminLayout />}>
+            <Route path="/user-management" element={<UserManagement />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
