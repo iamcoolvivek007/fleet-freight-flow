@@ -15,7 +15,6 @@ import {
   X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { VoiceAssistant } from "@/components/common/VoiceAssistant";
 
 /**
  * @name AppLayout
@@ -166,7 +165,6 @@ const AppLayout = () => {
           <Outlet />
         </main>
       </div>
-      <VoiceAssistant />
     </div>
   );
 };
