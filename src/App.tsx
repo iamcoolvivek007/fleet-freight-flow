@@ -13,6 +13,7 @@ import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
 import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
+import { VoiceAssistant } from "./components/common/VoiceAssistant";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <VoiceAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
