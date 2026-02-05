@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, DollarSign, Package, Download, FileText, Users, Truck, Calendar } from "lucide-react";
+import { TrendingUp, DollarSign, Package, Download, FileText, Users, Truck, Calendar, Database, Loader2 } from "lucide-react";
 import { PartyBalanceSheet } from "@/components/reports/PartyBalanceSheet";
 import { DriverBalanceSheet } from "@/components/reports/DriverBalanceSheet";
 import { DailyLoadReport } from "@/components/reports/DailyLoadReport";
@@ -14,15 +14,6 @@ import { toast } from "sonner";
 /**
  * @interface ReportData
  * @description The report data interface.
- * @property {number} totalRevenue - The total revenue.
- * @property {number} totalProfit - The total profit.
- * @property {number} totalLoads - The total number of loads.
- * @property {number} completedLoads - The number of completed loads.
- * @property {number} avgProfit - The average profit.
- * @property {number} totalExpenses - The total expenses.
- * @property {number} totalReceivables - The total receivables.
- * @property {number} totalPayables - The total payables.
- * @property {number} cashInHand - The cash in hand.
  */
 interface ReportData {
   totalRevenue: number;
@@ -45,10 +36,83 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("monthly");
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchReportData();
   }, [period]);
+
+  const downloadAllData = async () => {
+    setIsExporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Please log in to export data");
+        return;
+      }
+
+      // Fetch all data in parallel
+      const [
+        trucksRes,
+        loadsRes,
+        providersRes,
+        assignmentsRes,
+        transactionsRes,
+        expensesRes,
+        chargesRes,
+      ] = await Promise.all([
+        supabase.from("trucks").select("*").eq("user_id", user.id),
+        supabase.from("loads").select("*").eq("user_id", user.id),
+        supabase.from("load_providers").select("*").eq("user_id", user.id),
+        supabase.from("load_assignments").select("*").eq("user_id", user.id),
+        supabase.from("transactions").select("*").eq("user_id", user.id),
+        supabase.from("expenses").select("*").eq("user_id", user.id),
+        supabase.from("charges").select("*").eq("user_id", user.id),
+      ]);
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        user: { id: user.id, email: user.email },
+        data: {
+          trucks: trucksRes.data || [],
+          loads: loadsRes.data || [],
+          loadProviders: providersRes.data || [],
+          loadAssignments: assignmentsRes.data || [],
+          transactions: transactionsRes.data || [],
+          expenses: expensesRes.data || [],
+          charges: chargesRes.data || [],
+        },
+        summary: {
+          totalTrucks: trucksRes.data?.length || 0,
+          totalLoads: loadsRes.data?.length || 0,
+          totalProviders: providersRes.data?.length || 0,
+          totalTransactions: transactionsRes.data?.length || 0,
+          totalExpenses: expensesRes.data?.length || 0,
+          totalCharges: chargesRes.data?.length || 0,
+        },
+      };
+
+      // Create and download JSON file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `freightflow-export-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success("All data exported successfully!");
+    } catch (error: any) {
+      console.error("Export error:", error);
+      toast.error("Failed to export data");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -198,28 +262,42 @@ const Reports = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
           <p className="text-muted-foreground">
             Comprehensive analytics and insights
           </p>
         </div>
-        <Select
-          value={period}
-          onValueChange={(value: "daily" | "weekly" | "monthly") =>
-            setPeriod(value)
-          }
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="daily">Daily</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={downloadAllData}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Database className="h-4 w-4 mr-2" />
+            )}
+            Export All Data
+          </Button>
+          <Select
+            value={period}
+            onValueChange={(value: "daily" | "weekly" | "monthly") =>
+              setPeriod(value)
+            }
+          >
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
